@@ -1,0 +1,46 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+*.tfvars
+
+# Binaries & Executables
+*.exe
+*.bin
+*.dll
+*.so
+*.dylib
+*.app
+
+# Large Files
+*.iso
+*.vmdk
+*.qcow2
+*.zip
+*.tar.gz
+*.pdf  # optional — remove if you want to track PDFs
+
+# Logs & Temp Files
+*.log
+*.tmp
+*.swp
+*~
+
+# OS Generated
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Env Files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
