@@ -1,0 +1,51 @@
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # module.eks.aws_eks_node_group.main will be created
+  + resource "aws_eks_node_group" "main" {
+      + ami_type               = "AL2023_ARM_64_STANDARD"
+      + arn                    = (known after apply)
+      + capacity_type          = "SPOT"
+      + cluster_name           = "realistic-demo-pretamane-cluster"
+      + disk_size              = (known after apply)
+      + id                     = (known after apply)
+      + instance_types         = [
+          + "t4g.nano",
+        ]
+      + node_group_name        = "realistic-demo-pretamane-node-group"
+      + node_group_name_prefix = (known after apply)
+      + node_role_arn          = "arn:aws:iam::411911107156:role/realistic-demo-pretamane-eks-node-role"
+      + region                 = "ap-southeast-1"
+      + release_version        = (known after apply)
+      + resources              = (known after apply)
+      + status                 = (known after apply)
+      + subnet_ids             = [
+          + "subnet-03b9f0cf6305d5675",
+          + "subnet-0c2cc607c8e365448",
+        ]
+      + tags                   = {
+          + "Name" = "realistic-demo-pretamane-node-group"
+        }
+      + tags_all               = {
+          + "Name" = "realistic-demo-pretamane-node-group"
+        }
+      + version                = (known after apply)
+
+      + node_repair_config (known after apply)
+
+      + scaling_config {
+          + desired_size = 1
+          + max_size     = 1
+          + min_size     = 1
+        }
+
+      + update_config {
+          + max_unavailable = 1
+        }
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
