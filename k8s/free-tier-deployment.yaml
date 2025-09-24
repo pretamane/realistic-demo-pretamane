@@ -1,0 +1,201 @@
+# /k8s/free-tier-deployment.yaml
+# Free Tier Optimized Deployment with Mounting Techniques
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contact-api-free-tier
+  labels:
+    app: contact-api
+    environment: free-tier
+spec:
+  replicas: 1  # Single replica for Free Tier
+  selector:
+    matchLabels:
+      app: contact-api
+  template:
+    metadata:
+      labels:
+        app: contact-api
+        environment: free-tier
+    spec:
+      serviceAccountName: contact-api
+      
+      # Init Container for data preparation and mounting
+      initContainers:
+      - name: data-prep
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "🚀 Initializing Free Tier deployment..."
+            
+            # Create shared directories
+            mkdir -p /shared-data/{uploads,logs,config,backups}
+            
+            # Download configuration from S3 (simulated)
+            echo "📥 Downloading configuration..."
+            cat > /shared-data/config/app-config.json << EOF
+            {
+              "version": "1.0.0-free-tier",
+              "environment": "free-tier",
+              "features": {
+                "fileUpload": true,
+                "logging": true,
+                "monitoring": true,
+                "rclone": true,
+                "efs": true
+              },
+              "storage": {
+                "type": "s3",
+                "bucket": "realistic-demo-pretamane-terraform-state",
+                "efs": "/mnt/efs"
+              },
+              "cost_optimization": {
+                "free_tier": true,
+                "single_replica": true,
+                "minimal_resources": true
+              }
+            }
+            EOF
+            
+            # Create sample data
+            echo "📝 Creating sample data..."
+            echo "Free Tier Demo - $(date)" > /shared-data/logs/app.log
+            echo "Sample upload data for demo" > /shared-data/uploads/sample.txt
+            echo "Backup data" > /shared-data/backups/backup.txt
+            
+            # Set permissions
+            chmod -R 755 /shared-data
+            echo "✅ Data preparation completed!"
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /shared-data
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "32Mi"
+            cpu: "25m"
+
+      containers:
+      # Main FastAPI Application
+      - name: contact-api
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args: ["-c", "pip install fastapi uvicorn boto3 pydantic[email] && cp /app/app.py /tmp/app.py && cd /tmp && python app.py"]
+        volumeMounts:
+        - name: app-config
+          mountPath: /app
+        - name: shared-storage
+          mountPath: /shared-data
+        - name: efs-storage
+          mountPath: /mnt/efs
+        ports:
+        - containerPort: 8000
+        env:
+        - name: AWS_REGION
+          value: "ap-southeast-1"
+        - name: CONTACTS_TABLE
+          value: "realistic-demo-pretamane-contact-submissions"
+        - name: VISITORS_TABLE
+          value: "realistic-demo-pretamane-website-visitors"
+        - name: SES_FROM_EMAIL
+          value: "thawzin252467@gmail.com"
+        - name: SES_TO_EMAIL
+          value: "thawzin252467@gmail.com"
+        - name: ALLOWED_ORIGIN
+          value: "*"
+        - name: SHARED_DATA_PATH
+          value: "/shared-data"
+        - name: EFS_MOUNT_PATH
+          value: "/mnt/efs"
+        - name: FREE_TIER_MODE
+          value: "true"
+        resources:
+          requests:
+            memory: "64Mi"   # Minimal for Free Tier
+            cpu: "50m"
+          limits:
+            memory: "128Mi"  # Minimal for Free Tier
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 30
+
+      # RClone Sidecar for S3 mounting
+      - name: rclone-sidecar
+        image: rclone/rclone:latest
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "🔄 Starting RClone sidecar..."
+            
+            # Create RClone config
+            mkdir -p /root/.config/rclone
+            cat > /root/.config/rclone/rclone.conf << EOF
+            [s3]
+            type = s3
+            provider = AWS
+            region = ap-southeast-1
+            access_key_id = ${AWS_ACCESS_KEY_ID}
+            secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+            EOF
+            
+            # Mount S3 bucket
+            echo "📁 Mounting S3 bucket..."
+            rclone mount s3:realistic-demo-pretamane-terraform-state /mnt/s3 \
+              --allow-other \
+              --vfs-cache-mode writes \
+              --vfs-cache-max-size 50M \
+              --vfs-cache-max-age 30m \
+              --daemon
+            
+            echo "✅ RClone sidecar started!"
+            # Keep container running
+            tail -f /dev/null
+        volumeMounts:
+        - name: s3-mount
+          mountPath: /mnt/s3
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: secret-access-key
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+
+      volumes:
+      - name: app-config
+        configMap:
+          name: contact-api-config
+      - name: shared-storage
+        emptyDir:
+          sizeLimit: 100Mi  # Small for Free Tier
+      - name: s3-mount
+        emptyDir: {}
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-pvc

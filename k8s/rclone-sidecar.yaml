@@ -1,0 +1,125 @@
+# /k8s/rclone-sidecar.yaml
+# RClone Sidecar for S3 Mounting
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contact-api-with-rclone
+  labels:
+    app: contact-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: contact-api
+  template:
+    metadata:
+      labels:
+        app: contact-api
+    spec:
+      serviceAccountName: contact-api
+      containers:
+      # Main FastAPI Application
+      - name: contact-api
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args: ["-c", "pip install fastapi uvicorn boto3 pydantic[email] && cp /app/app.py /tmp/app.py && cd /tmp && python app.py"]
+        volumeMounts:
+        - name: app-config
+          mountPath: /app
+        - name: s3-mount
+          mountPath: /mnt/s3
+        ports:
+        - containerPort: 8000
+        env:
+        - name: AWS_REGION
+          value: "ap-southeast-1"
+        - name: CONTACTS_TABLE
+          value: "realistic-demo-pretamane-contact-submissions"
+        - name: VISITORS_TABLE
+          value: "realistic-demo-pretamane-website-visitors"
+        - name: SES_FROM_EMAIL
+          value: "thawzin252467@gmail.com"
+        - name: SES_TO_EMAIL
+          value: "thawzin252467@gmail.com"
+        - name: ALLOWED_ORIGIN
+          value: "*"
+        - name: S3_MOUNT_PATH
+          value: "/mnt/s3"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+      # RClone Sidecar Container
+      - name: rclone-sidecar
+        image: rclone/rclone:latest
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "Starting RClone sidecar..."
+            # Create RClone config
+            mkdir -p /root/.config/rclone
+            cat > /root/.config/rclone/rclone.conf << EOF
+            [s3]
+            type = s3
+            provider = AWS
+            region = ap-southeast-1
+            access_key_id = ${AWS_ACCESS_KEY_ID}
+            secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+            EOF
+            
+            # Mount S3 bucket
+            echo "Mounting S3 bucket..."
+            rclone mount s3:realistic-demo-pretamane-terraform-state /mnt/s3 \
+              --allow-other \
+              --vfs-cache-mode writes \
+              --vfs-cache-max-size 100M \
+              --vfs-cache-max-age 1h \
+              --daemon
+            
+            # Keep container running
+            tail -f /dev/null
+        volumeMounts:
+        - name: s3-mount
+          mountPath: /mnt/s3
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: secret-access-key
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+      volumes:
+      - name: app-config
+        configMap:
+          name: contact-api-config
+      - name: s3-mount
+        emptyDir: {}

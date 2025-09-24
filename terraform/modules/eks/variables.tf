@@ -1,12 +1,23 @@
 # /terraform/modules/eks/variables.tf
 
+variable "project_name" {
+  description = "Name of the project"
+  type        = string
+}
+
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "ap-southeast-1"
+}
+
 variable "vpc_id" {
-  description = "VPC ID from VPC module"
+  description = "VPC ID where EKS cluster will be created"
   type        = string
 }
 
 variable "subnet_ids" {
-  description = "Public subnet IDs from VPC module"
+  description = "List of subnet IDs for EKS cluster"
   type        = list(string)
 }
 
@@ -15,14 +26,8 @@ variable "eks_node_security_group_id" {
   type        = string
 }
 
-variable "project_name" {
-  description = "Project name for tagging"
-  type        = string
-  default     = "realistic-demo-pretamane"
-}
-
-variable "region" {
-  description = "AWS region"
-  type        = string
-  default     = "ap-southeast-1"
+variable "free_tier_mode" {
+  description = "Enable Free Tier optimized configuration"
+  type        = bool
+  default     = false
 }
