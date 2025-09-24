@@ -23,8 +23,6 @@ module "iam" {
   source = "./modules/iam"
   project_name        = "realistic-demo-pretamane"
   region              = "ap-southeast-1"
-  oidc_provider_url   = module.eks.oidc_provider_url  # 👈 NOW CORRECT
-  oidc_provider_arn   = module.eks.oidc_provider_arn
 }
 
 module "database" {

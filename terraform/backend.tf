@@ -2,9 +2,9 @@
 
 terraform {
   backend "s3" {
-    bucket = "terraform-state-realistic-demo-pretamane" # We’ll create this bucket next
+    bucket = "realistic-demo-pretamane-terraform-state"
     key    = "terraform.tfstate"
     region = "ap-southeast-1"
-    dynamodb_table = "terraform-locks" # For state locking — we’ll create this too
+    dynamodb_table = "realistic-demo-pretamane-terraform-locks"
   }
 }

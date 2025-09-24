@@ -14,17 +14,9 @@ resource "aws_iam_role" "github_actions" {
       {
         Effect = "Allow"
         Principal = {
-          Federated = var.oidc_provider_arn
+          Service = "ec2.amazonaws.com"
         }
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          StringEquals = {
-            "${replace(var.oidc_provider_url, "https://", "")}:aud" = "sts.amazonaws.com"
-          }
-          StringLike = {
-            "${replace(var.oidc_provider_url, "https://", "")}:sub" = "repo:pretamane/realistic-demo-pretamane:ref:refs/heads/main"
-          }
-        }
+        Action = "sts:AssumeRole"
       }
     ]
   })

@@ -18,7 +18,12 @@ spec:
       serviceAccountName: contact-api
       containers:
       - name: contact-api
-        image: pretamane/contact-api:latest # ← You'll build & push this later
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args: ["-c", "pip install fastapi uvicorn boto3 pydantic[email] && cp /app/app.py /tmp/app.py && cd /tmp && python app.py"]
+        volumeMounts:
+        - name: app-config
+          mountPath: /app
         ports:
         - containerPort: 8000
         env:
@@ -53,4 +58,8 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "200m"
+      volumes:
+      - name: app-config
+        configMap:
+          name: contact-api-config
       restartPolicy: Always
