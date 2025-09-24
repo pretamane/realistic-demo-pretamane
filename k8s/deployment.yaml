@@ -15,6 +15,7 @@ spec:
       labels:
         app: contact-api
     spec:
+      serviceAccountName: contact-api
       containers:
       - name: contact-api
         image: pretamane/contact-api:latest # ← You'll build & push this later
@@ -24,9 +25,9 @@ spec:
         - name: AWS_REGION
           value: "ap-southeast-1"
         - name: CONTACTS_TABLE
-          value: "ContactSubmissions"
+          value: "realistic-demo-pretamane-contact-submissions"
         - name: VISITORS_TABLE
-          value: "WebsiteVisitors"
+          value: "realistic-demo-pretamane-website-visitors"
         - name: SES_FROM_EMAIL
           value: "thawzin252467@gmail.com"
         - name: SES_TO_EMAIL

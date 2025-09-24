@@ -11,3 +11,28 @@ output "public_subnet_ids" {
 output "eks_node_security_group_id" {
   value = module.vpc.eks_node_security_group_id
 }
+
+output "cluster_name" {
+  value = module.eks.cluster_name
+}
+
+output "cluster_endpoint" {
+  value = module.eks.cluster_endpoint
+}
+
+output "cluster_certificate_authority_data" {
+  value = module.eks.cluster_certificate_authority_data
+}
+
+# Database outputs
+output "contact_submissions_table_name" {
+  value = module.database.contact_submissions_table_name
+}
+
+output "website_visitors_table_name" {
+  value = module.database.website_visitors_table_name
+}
+
+output "app_role_arn" {
+  value = module.database.app_role_arn
+}
