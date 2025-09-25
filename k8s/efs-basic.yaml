@@ -1,0 +1,36 @@
+# /k8s/efs-basic.yaml
+# Basic EFS configuration without access points - should work reliably
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: efs-basic-pv
+  labels:
+    app: contact-api
+    storage-type: efs
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-0075863cfd5b77ae1
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: efs-basic-pvc
+  labels:
+    app: contact-api
+    storage-type: efs
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: efs-basic-pv
+  storageClassName: ""

@@ -51,7 +51,7 @@ resource "aws_eks_node_group" "main_free_tier" {
   }
 
   update_config {
-    max_unavailable_percentage = 0
+    max_unavailable_percentage = 25
   }
 
   # Ensure that IAM Role permissions are created before and deleted after EKS Node Group handling.

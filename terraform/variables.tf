@@ -11,3 +11,9 @@ variable "region" {
   type        = string
   default     = "ap-southeast-1"
 }
+
+variable "free_tier_mode" {
+  description = "Enable Free Tier optimized configuration"
+  type        = bool
+  default     = false
+}

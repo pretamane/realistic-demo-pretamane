@@ -1,0 +1,39 @@
+# /k8s/test-efs-deployment.yaml
+# Simple deployment to test EFS mounting
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-efs
+  labels:
+    app: test-efs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-efs
+  template:
+    metadata:
+      labels:
+        app: test-efs
+    spec:
+      serviceAccountName: contact-api
+      containers:
+      - name: test-efs
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args: ["-c", "echo 'EFS Test Starting...' && mkdir -p /mnt/efs/test && echo 'Hello from EFS!' > /mnt/efs/test/test.txt && ls -la /mnt/efs/test/ && cat /mnt/efs/test/test.txt && sleep 3600"]
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-basic-pvc
+      restartPolicy: Always

@@ -36,6 +36,50 @@ module "database" {
 }
 
 # ---------------------------
+# EFS File System Module
+# ---------------------------
+
+module "efs" {
+  source = "./modules/efs"
+  project_name                    = "realistic-demo-pretamane"
+  environment                     = "production"
+  vpc_id                         = module.vpc.vpc_id
+  subnet_ids                     = module.vpc.public_subnet_ids
+  eks_node_security_group_id     = module.vpc.eks_node_security_group_id
+  eks_cluster_security_group_id  = module.eks.cluster_security_group_id
+  oidc_provider_arn              = module.eks.oidc_provider_arn
+  oidc_provider_url              = module.eks.oidc_provider_url
+  performance_mode               = "generalPurpose"
+  throughput_mode                = "bursting"
+  enable_backup                  = true
+}
+
+# ---------------------------
+# Comprehensive Storage Module
+# ---------------------------
+
+module "storage" {
+  source = "./modules/storage"
+  project_name                    = "realistic-demo-pretamane"
+  environment                     = "production"
+  region                         = "ap-southeast-1"
+  vpc_id                         = module.vpc.vpc_id
+  subnet_ids                     = module.vpc.public_subnet_ids
+  eks_node_security_group_id     = module.vpc.eks_node_security_group_id
+  eks_cluster_security_group_id  = module.eks.cluster_security_group_id
+  oidc_provider_arn              = module.eks.oidc_provider_arn
+  oidc_provider_url              = module.eks.oidc_provider_url
+  allowed_cidr_blocks            = ["0.0.0.0/0"]
+  opensearch_instance_type       = "t3.small.search"
+  opensearch_instance_count      = 2
+  opensearch_dedicated_master    = false
+  opensearch_volume_size         = 20
+  opensearch_master_user         = "admin"
+  opensearch_master_password     = "Admin123!"
+  enable_s3_notifications        = true
+}
+
+# ---------------------------
 # Helm Releases for Monitoring & Scaling
 # ---------------------------
 
@@ -145,4 +189,30 @@ resource "helm_release" "aws_load_balancer_controller" {
   ]
 
   depends_on = [module.eks]
+}
+
+# EFS CSI Driver
+resource "helm_release" "efs_csi_driver" {
+  name       = "aws-efs-csi-driver"
+  repository = "https://kubernetes-sigs.github.io/aws-efs-csi-driver"
+  chart      = "aws-efs-csi-driver"
+  namespace  = "kube-system"
+  version    = "2.4.8"
+
+  set = [
+    {
+      name  = "controller.serviceAccount.create"
+      value = "false"
+    },
+    {
+      name  = "controller.serviceAccount.name"
+      value = "efs-csi-controller-sa"
+    },
+    {
+      name  = "controller.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      value = module.efs.efs_csi_driver_role_arn
+    }
+  ]
+
+  depends_on = [module.eks, module.efs]
 }

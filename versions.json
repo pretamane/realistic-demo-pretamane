@@ -1,0 +1,32 @@
+{
+    "Objects": [
+        {
+            "Key": "terraform.tfstate",
+            "VersionId": "A29SCDlH0y1wAaL4E7vUh60XjRGhotFz"
+        },
+        {
+            "Key": "terraform.tfstate",
+            "VersionId": "DMP.yg4p8WP3A6h_8HGV8fmEepOXTq3E"
+        },
+        {
+            "Key": "terraform.tfstate",
+            "VersionId": "iVxKPcDt.AoOLS8Fj37mlqzuRQ9CmcnP"
+        },
+        {
+            "Key": "terraform.tfstate",
+            "VersionId": "YAaBzZtYN5x_C34OZtKtNMbYoMCuIcsj"
+        },
+        {
+            "Key": "terraform.tfstate",
+            "VersionId": "OLF2D71Z4JPv1VF2DixKv1LKE0DWe0zK"
+        },
+        {
+            "Key": "terraform.tfstate",
+            "VersionId": "hUdx2VMrylSRz0V8myZAroALFeT0BXYo"
+        },
+        {
+            "Key": "terraform.tfstate",
+            "VersionId": "SFrbflfUE62RYU05sIx.Jb.Xl1jdouGP"
+        }
+    ]
+}

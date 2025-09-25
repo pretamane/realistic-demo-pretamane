@@ -9,7 +9,7 @@ provider "aws" {
 # ---------------------------
 
 resource "aws_vpc" "main" {
-  cidr_block           = "10.0.0.0/27"
+  cidr_block           = "10.0.0.0/24"
   enable_dns_support   = true  # 👈 ADD THIS
   enable_dns_hostnames = true  # 👈 ADD THIS
   tags = {
@@ -34,7 +34,7 @@ resource "aws_internet_gateway" "gw" {
 
 resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.0.0/28" # First 16 IPs
+  cidr_block              = "10.0.0.0/26" # First 64 IPs
   map_public_ip_on_launch = true
   availability_zone       = "${var.region}a"
 
@@ -49,7 +49,7 @@ resource "aws_subnet" "public_a" {
 
 resource "aws_subnet" "public_b" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.0.16/28" # Next 16 IPs
+  cidr_block              = "10.0.0.64/26" # Next 64 IPs
   map_public_ip_on_launch = true
   availability_zone       = "${var.region}b"
 

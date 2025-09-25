@@ -1,0 +1,459 @@
+# /k8s/portfolio-demo.yaml
+# Portfolio-ready deployment showcasing real-world scenarios
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portfolio-demo
+  labels:
+    app: portfolio-demo
+    version: v1.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: portfolio-demo
+  template:
+    metadata:
+      labels:
+        app: portfolio-demo
+        version: v1.0
+    spec:
+      serviceAccountName: contact-api
+      initContainers:
+      - name: data-initializer
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "🚀 Initializing Portfolio Demo Data..."
+          
+          # Create EFS directory structure for real-world scenarios
+          mkdir -p /mnt/efs/uploads/documents
+          mkdir -p /mnt/efs/uploads/images
+          mkdir -p /mnt/efs/uploads/videos
+          mkdir -p /mnt/efs/processed/documents
+          mkdir -p /mnt/efs/processed/images
+          mkdir -p /mnt/efs/logs/application
+          mkdir -p /mnt/efs/logs/audit
+          mkdir -p /mnt/efs/shared/config
+          mkdir -p /mnt/efs/shared/templates
+          
+          # Create sample business documents
+          cat > /mnt/efs/uploads/documents/contract_001.pdf << 'EOF'
+          CONTRACT DOCUMENT
+          =================
+          Client: Acme Corporation
+          Service: Cloud Migration
+          Value: $50,000
+          Status: Active
+          Date: $(date)
+          EOF
+          
+          cat > /mnt/efs/uploads/documents/proposal_002.docx << 'EOF'
+          PROJECT PROPOSAL
+          ================
+          Project: EKS Migration
+          Timeline: 3 months
+          Team: 5 engineers
+          Budget: $75,000
+          Date: $(date)
+          EOF
+          
+          # Create sample configuration
+          cat > /mnt/efs/shared/config/business-rules.json << 'EOF'
+          {
+            "document_processing": {
+              "max_file_size": "100MB",
+              "allowed_formats": ["pdf", "docx", "txt", "jpg", "png"],
+              "auto_classification": true,
+              "retention_days": 2555
+            },
+            "workflow": {
+              "approval_required": true,
+              "notification_enabled": true,
+              "backup_enabled": true
+            }
+          }
+          EOF
+          
+          # Create audit log
+          echo "$(date): Portfolio demo initialized successfully" > /mnt/efs/logs/audit/system.log
+          
+          # Set proper permissions
+          chmod -R 755 /mnt/efs
+          
+          echo "✅ Portfolio demo data initialization completed!"
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      
+      containers:
+      - name: fastapi-app
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          echo "🚀 Starting Portfolio Demo FastAPI Application..."
+          
+          # Install dependencies
+          pip install fastapi uvicorn boto3 pydantic[email] python-multipart aiofiles
+          
+          # Create the FastAPI application
+          cat > /tmp/portfolio_app.py << 'EOF'
+          from fastapi import FastAPI, File, UploadFile, HTTPException
+          from fastapi.responses import JSONResponse, FileResponse
+          from fastapi.middleware.cors import CORSMiddleware
+          import os
+          import json
+          import shutil
+          from datetime import datetime
+          from pathlib import Path
+          import boto3
+          from botocore.exceptions import ClientError
+          
+          app = FastAPI(
+              title="Portfolio Demo - Enterprise File Processing",
+              description="Real-world scenario: Document processing with EFS, S3, and advanced mounting",
+              version="1.0.0"
+          )
+          
+          # CORS middleware
+          app.add_middleware(
+              CORSMiddleware,
+              allow_origins=["*"],
+              allow_credentials=True,
+              allow_methods=["*"],
+              allow_headers=["*"],
+          )
+          
+          # Configuration
+          EFS_BASE_PATH = "/mnt/efs"
+          UPLOAD_PATH = f"{EFS_BASE_PATH}/uploads"
+          PROCESSED_PATH = f"{EFS_BASE_PATH}/processed"
+          LOG_PATH = f"{EFS_BASE_PATH}/logs"
+          
+          # Initialize S3 client
+          try:
+              s3_client = boto3.client('s3', region_name='ap-southeast-1')
+              print("✅ S3 client initialized successfully")
+          except Exception as e:
+              print(f"⚠️ S3 client initialization failed: {e}")
+              s3_client = None
+          
+          @app.on_event("startup")
+          async def startup_event():
+              print("🚀 Portfolio Demo Application Starting...")
+              print(f"📁 EFS Mount Point: {EFS_BASE_PATH}")
+              print(f"📊 Available Storage: {get_storage_info()}")
+          
+          @app.get("/")
+          async def root():
+              return {
+                  "message": "Portfolio Demo - Enterprise File Processing System",
+                  "version": "1.0.0",
+                  "features": [
+                      "EFS Persistent Storage",
+                      "S3 Integration",
+                      "Document Processing",
+                      "Real-time Monitoring",
+                      "Multi-container Architecture"
+                  ],
+                  "status": "operational"
+              }
+          
+          @app.get("/health")
+          async def health_check():
+              return {
+                  "status": "healthy",
+                  "timestamp": datetime.now().isoformat(),
+                  "efs_mounted": os.path.exists(EFS_BASE_PATH),
+                  "storage_info": get_storage_info()
+              }
+          
+          @app.get("/storage/status")
+          async def storage_status():
+              """Real-world scenario: Storage system monitoring"""
+              return {
+                  "efs_status": {
+                      "mounted": os.path.exists(EFS_BASE_PATH),
+                      "upload_dir": os.path.exists(UPLOAD_PATH),
+                      "processed_dir": os.path.exists(PROCESSED_PATH),
+                      "log_dir": os.path.exists(LOG_PATH)
+                  },
+                  "file_counts": {
+                      "uploads": count_files(UPLOAD_PATH),
+                      "processed": count_files(PROCESSED_PATH),
+                      "logs": count_files(LOG_PATH)
+                  },
+                  "storage_info": get_storage_info()
+              }
+          
+          @app.post("/upload")
+          async def upload_file(file: UploadFile = File(...)):
+              """Real-world scenario: Document upload with processing"""
+              try:
+                  # Create upload directory if not exists
+                  os.makedirs(UPLOAD_PATH, exist_ok=True)
+                  
+                  # Save file to EFS
+                  file_path = f"{UPLOAD_PATH}/{file.filename}"
+                  with open(file_path, "wb") as buffer:
+                      shutil.copyfileobj(file.file, buffer)
+                  
+                  # Log the upload
+                  log_activity("file_upload", {
+                      "filename": file.filename,
+                      "size": os.path.getsize(file_path),
+                      "timestamp": datetime.now().isoformat()
+                  })
+                  
+                  return {
+                      "message": "File uploaded successfully",
+                      "filename": file.filename,
+                      "path": file_path,
+                      "size": os.path.getsize(file_path),
+                      "status": "ready_for_processing"
+                  }
+              except Exception as e:
+                  raise HTTPException(status_code=500, detail=str(e))
+          
+          @app.get("/files")
+          async def list_files():
+              """Real-world scenario: File management system"""
+              files = []
+              for root, dirs, filenames in os.walk(UPLOAD_PATH):
+                  for filename in filenames:
+                      file_path = os.path.join(root, filename)
+                      files.append({
+                          "name": filename,
+                          "path": file_path,
+                          "size": os.path.getsize(file_path),
+                          "modified": datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
+                      })
+              return {"files": files, "count": len(files)}
+          
+          @app.post("/process/{filename}")
+          async def process_file(filename: str):
+              """Real-world scenario: Document processing workflow"""
+              try:
+                  source_path = f"{UPLOAD_PATH}/{filename}"
+                  if not os.path.exists(source_path):
+                      raise HTTPException(status_code=404, detail="File not found")
+                  
+                  # Create processed directory
+                  os.makedirs(PROCESSED_PATH, exist_ok=True)
+                  
+                  # Simulate processing (copy to processed directory)
+                  processed_path = f"{PROCESSED_PATH}/processed_{filename}"
+                  shutil.copy2(source_path, processed_path)
+                  
+                  # Log processing
+                  log_activity("file_processing", {
+                      "filename": filename,
+                      "processed_path": processed_path,
+                      "timestamp": datetime.now().isoformat()
+                  })
+                  
+                  return {
+                      "message": "File processed successfully",
+                      "original": source_path,
+                      "processed": processed_path,
+                      "status": "completed"
+                  }
+              except Exception as e:
+                  raise HTTPException(status_code=500, detail=str(e))
+          
+          @app.get("/logs")
+          async def get_logs():
+              """Real-world scenario: Application monitoring"""
+              logs = []
+              if os.path.exists(LOG_PATH):
+                  for root, dirs, filenames in os.walk(LOG_PATH):
+                      for filename in filenames:
+                          if filename.endswith('.log'):
+                              log_file = os.path.join(root, filename)
+                              with open(log_file, 'r') as f:
+                                  content = f.read()
+                              logs.append({
+                                  "file": filename,
+                                  "content": content,
+                                  "size": len(content)
+                              })
+              return {"logs": logs}
+          
+          def get_storage_info():
+              """Get storage information"""
+              try:
+                  stat = os.statvfs(EFS_BASE_PATH)
+                  total = stat.f_frsize * stat.f_blocks
+                  free = stat.f_frsize * stat.f_available
+                  used = total - free
+                  return {
+                      "total_gb": round(total / (1024**3), 2),
+                      "used_gb": round(used / (1024**3), 2),
+                      "free_gb": round(free / (1024**3), 2),
+                      "usage_percent": round((used / total) * 100, 2)
+                  }
+              except:
+                  return {"error": "Unable to get storage info"}
+          
+          def count_files(directory):
+              """Count files in directory"""
+              try:
+                  return sum(len(files) for _, _, files in os.walk(directory))
+              except:
+                  return 0
+          
+          def log_activity(activity, data):
+              """Log activity to EFS"""
+              try:
+                  os.makedirs(f"{LOG_PATH}/application", exist_ok=True)
+                  log_file = f"{LOG_PATH}/application/activity.log"
+                  with open(log_file, 'a') as f:
+                      f.write(f"{datetime.now().isoformat()} - {activity}: {json.dumps(data)}\n")
+              except Exception as e:
+                  print(f"Logging error: {e}")
+          
+          if __name__ == "__main__":
+              import uvicorn
+              uvicorn.run(app, host="0.0.0.0", port=8000)
+          EOF
+          
+          # Start the application
+          cd /tmp && python portfolio_app.py
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        env:
+        - name: AWS_REGION
+          value: "ap-southeast-1"
+        - name: EFS_MOUNT_PATH
+          value: "/mnt/efs"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      
+      - name: s3-sync
+        image: rclone/rclone:latest
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "🔄 Starting S3 Synchronization Service..."
+          
+          # Create RClone config
+          mkdir -p /root/.config/rclone
+          cat > /root/.config/rclone/rclone.conf << 'EOF'
+          [s3-backup]
+          type = s3
+          provider = AWS
+          region = ap-southeast-1
+          access_key_id = ${AWS_ACCESS_KEY_ID}
+          secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+          EOF
+          
+          # Sync EFS to S3 every 5 minutes
+          while true; do
+              echo "$(date): Starting S3 sync..."
+              
+              # Sync processed files to S3
+              rclone sync /mnt/efs/processed s3-backup:realistic-demo-pretamane-backup-abcdef/processed \
+                --progress --log-level INFO
+              
+              # Sync logs to S3
+              rclone sync /mnt/efs/logs s3-backup:realistic-demo-pretamane-backup-abcdef/logs \
+                --progress --log-level INFO
+              
+              echo "$(date): S3 sync completed"
+              sleep 300  # Wait 5 minutes
+          done
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: storage-credentials
+              key: aws-access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: storage-credentials
+              key: aws-secret-access-key
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-basic-pvc
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portfolio-demo-service
+  labels:
+    app: portfolio-demo
+spec:
+  selector:
+    app: portfolio-demo
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portfolio-demo-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: portfolio-demo-service
+            port:
+              number: 80

@@ -1,0 +1,470 @@
+# /k8s/advanced-deployment.yaml
+# Advanced deployment with comprehensive storage mounting and indexing
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contact-api-advanced
+  labels:
+    app: contact-api
+    version: advanced
+    storage-type: comprehensive
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: contact-api
+      version: advanced
+  template:
+    metadata:
+      labels:
+        app: contact-api
+        version: advanced
+        storage-type: comprehensive
+    spec:
+      serviceAccountName: contact-api
+      
+      # Init Container for data preparation and indexing setup
+      initContainers:
+      - name: data-prep
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "Initializing advanced data preparation..."
+            
+            # Create EFS directory structure
+            mkdir -p /mnt/efs/shared/uploads
+            mkdir -p /mnt/efs/shared/logs
+            mkdir -p /mnt/efs/shared/index
+            mkdir -p /mnt/efs/shared/backup
+            mkdir -p /mnt/efs/shared/config
+            
+            # Create local shared directory structure
+            mkdir -p /shared-data/uploads
+            mkdir -p /shared-data/logs
+            mkdir -p /shared-data/index
+            mkdir -p /shared-data/backup
+            mkdir -p /shared-data/config
+            
+            # Download and setup initial configuration
+            echo "Setting up initial configuration..."
+            cat > /shared-data/config/app-config.json << EOF
+            {
+              "version": "2.0.0",
+              "features": {
+                "fileUpload": true,
+                "logging": true,
+                "monitoring": true,
+                "indexing": true,
+                "backup": true,
+                "encryption": true
+              },
+              "storage": {
+                "efs": {
+                  "enabled": true,
+                  "mountPath": "/mnt/efs",
+                  "sharedPath": "/mnt/efs/shared"
+                },
+                "s3": {
+                  "enabled": true,
+                  "dataBucket": "${S3_DATA_BUCKET}",
+                  "indexBucket": "${S3_INDEX_BUCKET}",
+                  "backupBucket": "${S3_BACKUP_BUCKET}"
+                },
+                "opensearch": {
+                  "enabled": true,
+                  "endpoint": "${OPENSEARCH_ENDPOINT}",
+                  "index": "${OPENSEARCH_INDEX}"
+                }
+              },
+              "indexing": {
+                "batchSize": ${INDEX_BATCH_SIZE},
+                "refreshInterval": "${INDEX_REFRESH_INTERVAL}",
+                "replicas": ${INDEX_REPLICAS},
+                "shards": ${INDEX_SHARDS}
+              }
+            }
+            EOF
+            
+            # Create sample data files
+            echo "Creating sample data files..."
+            echo "Sample log entry $(date)" > /shared-data/logs/app.log
+            echo "Sample upload data" > /shared-data/uploads/sample.txt
+            echo "Sample index data" > /shared-data/index/sample.json
+            
+            # Create OpenSearch index mapping
+            cat > /shared-data/index/document-mapping.json << EOF
+            {
+              "mappings": {
+                "properties": {
+                  "id": { "type": "keyword" },
+                  "title": { "type": "text" },
+                  "content": { "type": "text" },
+                  "timestamp": { "type": "date" },
+                  "tags": { "type": "keyword" },
+                  "metadata": { "type": "object" }
+                }
+              }
+            }
+            EOF
+            
+            # Set proper permissions
+            chmod -R 755 /shared-data
+            chmod -R 755 /mnt/efs/shared
+            
+            echo "Advanced data preparation completed!"
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /shared-data
+        - name: efs-storage
+          mountPath: /mnt/efs
+        env:
+        - name: S3_DATA_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_DATA_BUCKET
+        - name: S3_INDEX_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_INDEX_BUCKET
+        - name: S3_BACKUP_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_BACKUP_BUCKET
+        - name: OPENSEARCH_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: OPENSEARCH_ENDPOINT
+        - name: OPENSEARCH_INDEX
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: OPENSEARCH_INDEX
+        - name: INDEX_BATCH_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: INDEX_BATCH_SIZE
+        - name: INDEX_REFRESH_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: INDEX_REFRESH_INTERVAL
+        - name: INDEX_REPLICAS
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: INDEX_REPLICAS
+        - name: INDEX_SHARDS
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: INDEX_SHARDS
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+      containers:
+      # Main FastAPI Application
+      - name: contact-api
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args: ["-c", "pip install fastapi uvicorn boto3 pydantic[email] elasticsearch opensearch-py && cp /app/app.py /tmp/app.py && cd /tmp && python app.py"]
+        volumeMounts:
+        - name: app-config
+          mountPath: /app
+        - name: shared-storage
+          mountPath: /shared-data
+        - name: efs-storage
+          mountPath: /mnt/efs
+        ports:
+        - containerPort: 8000
+        env:
+        - name: AWS_REGION
+          value: "ap-southeast-1"
+        - name: CONTACTS_TABLE
+          value: "realistic-demo-pretamane-contact-submissions"
+        - name: VISITORS_TABLE
+          value: "realistic-demo-pretamane-website-visitors"
+        - name: SES_FROM_EMAIL
+          value: "thawzin252467@gmail.com"
+        - name: SES_TO_EMAIL
+          value: "thawzin252467@gmail.com"
+        - name: ALLOWED_ORIGIN
+          value: "*"
+        - name: SHARED_DATA_PATH
+          value: "/shared-data"
+        - name: EFS_MOUNT_PATH
+          value: "/mnt/efs"
+        - name: S3_DATA_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_DATA_BUCKET
+        - name: S3_INDEX_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_INDEX_BUCKET
+        - name: S3_BACKUP_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_BACKUP_BUCKET
+        - name: OPENSEARCH_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: OPENSEARCH_ENDPOINT
+        - name: OPENSEARCH_INDEX
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: OPENSEARCH_INDEX
+        - name: OPENSEARCH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-config
+              key: username
+        - name: OPENSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-config
+              key: password
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+
+      # RClone Sidecar for S3 Mounting
+      - name: rclone-sidecar
+        image: rclone/rclone:latest
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "Starting advanced RClone sidecar..."
+            
+            # Create RClone config
+            mkdir -p /root/.config/rclone
+            cat > /root/.config/rclone/rclone.conf << EOF
+            [s3-data]
+            type = s3
+            provider = AWS
+            region = ap-southeast-1
+            access_key_id = ${AWS_ACCESS_KEY_ID}
+            secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+            
+            [s3-index]
+            type = s3
+            provider = AWS
+            region = ap-southeast-1
+            access_key_id = ${AWS_ACCESS_KEY_ID}
+            secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+            
+            [s3-backup]
+            type = s3
+            provider = AWS
+            region = ap-southeast-1
+            access_key_id = ${AWS_ACCESS_KEY_ID}
+            secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+            EOF
+            
+            # Mount S3 buckets
+            echo "Mounting S3 data bucket..."
+            rclone mount s3-data:${S3_DATA_BUCKET} /mnt/s3/data \
+              --allow-other \
+              --vfs-cache-mode writes \
+              --vfs-cache-max-size 200M \
+              --vfs-cache-max-age 2h \
+              --daemon
+            
+            echo "Mounting S3 index bucket..."
+            rclone mount s3-index:${S3_INDEX_BUCKET} /mnt/s3/index \
+              --allow-other \
+              --vfs-cache-mode writes \
+              --vfs-cache-max-size 100M \
+              --vfs-cache-max-age 1h \
+              --daemon
+            
+            echo "Mounting S3 backup bucket..."
+            rclone mount s3-backup:${S3_BACKUP_BUCKET} /mnt/s3/backup \
+              --allow-other \
+              --vfs-cache-mode writes \
+              --vfs-cache-max-size 100M \
+              --vfs-cache-max-age 1h \
+              --daemon
+            
+            # Keep container running
+            tail -f /dev/null
+        volumeMounts:
+        - name: s3-mount
+          mountPath: /mnt/s3
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: storage-credentials
+              key: aws-access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: storage-credentials
+              key: aws-secret-access-key
+        - name: S3_DATA_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_DATA_BUCKET
+        - name: S3_INDEX_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_INDEX_BUCKET
+        - name: S3_BACKUP_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_BACKUP_BUCKET
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+
+      # OpenSearch Indexer Sidecar
+      - name: opensearch-indexer
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args:
+          - -c
+          - |
+            echo "Starting OpenSearch indexer..."
+            pip install opensearch-py elasticsearch
+            
+            # Create indexer script
+            cat > /tmp/indexer.py << 'EOF'
+            import os
+            import json
+            import time
+            from opensearchpy import OpenSearch, helpers
+            
+            # OpenSearch client
+            client = OpenSearch(
+                hosts=[os.environ['OPENSEARCH_ENDPOINT']],
+                http_auth=(os.environ['OPENSEARCH_USERNAME'], os.environ['OPENSEARCH_PASSWORD']),
+                use_ssl=True,
+                verify_certs=True,
+                ssl_assert_hostname=False,
+                ssl_show_warn=False
+            )
+            
+            # Create index if not exists
+            index_name = os.environ['OPENSEARCH_INDEX']
+            if not client.indices.exists(index=index_name):
+                mapping = {
+                    "mappings": {
+                        "properties": {
+                            "id": {"type": "keyword"},
+                            "title": {"type": "text"},
+                            "content": {"type": "text"},
+                            "timestamp": {"type": "date"},
+                            "tags": {"type": "keyword"},
+                            "metadata": {"type": "object"}
+                        }
+                    }
+                }
+                client.indices.create(index=index_name, body=mapping)
+                print(f"Created index: {index_name}")
+            
+            # Index documents
+            while True:
+                try:
+                    # Sample document
+                    doc = {
+                        "id": f"doc_{int(time.time())}",
+                        "title": "Sample Document",
+                        "content": "This is a sample document for indexing",
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "tags": ["sample", "test"],
+                        "metadata": {"source": "kubernetes", "version": "2.0"}
+                    }
+                    
+                    client.index(index=index_name, body=doc)
+                    print(f"Indexed document: {doc['id']}")
+                    
+                    time.sleep(30)  # Index every 30 seconds
+                except Exception as e:
+                    print(f"Error indexing: {e}")
+                    time.sleep(60)
+            EOF
+            
+            python /tmp/indexer.py
+        env:
+        - name: OPENSEARCH_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: OPENSEARCH_ENDPOINT
+        - name: OPENSEARCH_INDEX
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: OPENSEARCH_INDEX
+        - name: OPENSEARCH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-config
+              key: username
+        - name: OPENSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-config
+              key: password
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+
+      volumes:
+      - name: app-config
+        configMap:
+          name: contact-api-app
+      - name: shared-storage
+        emptyDir:
+          sizeLimit: 2Gi
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-basic-pvc
+      - name: s3-mount
+        emptyDir:
+          sizeLimit: 1Gi
