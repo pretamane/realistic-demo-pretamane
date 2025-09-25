@@ -319,7 +319,7 @@ main() {
     log "Your AWS credits are safe! 💰"
     log ""
     log "To rebuild everything later, run:"
-    log "  ./deploy-comprehensive.sh"
+    log "  ./scripts/deploy-comprehensive.sh"
 }
 
 # Run main function

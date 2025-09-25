@@ -471,7 +471,7 @@ main() {
         log "   🔍 Health: http://$ALB_ENDPOINT/health"
     fi
     log ""
-    log "⚠️  Remember to run cleanup script when done: ./cleanup-comprehensive.sh"
+    log "⚠️  Remember to run cleanup script when done: ./scripts/cleanup-comprehensive.sh"
 }
 
 # Trap to handle script interruption

@@ -112,7 +112,7 @@ show_cleanup_instructions() {
     echo ""
     echo "🧹 To clean up resources immediately:"
     echo "====================================="
-    echo "1. Run: ./cleanup-now.sh"
+    echo "1. Run: ./scripts/cleanup-now.sh"
     echo "2. Or manually:"
     echo "   - Delete EKS cluster"
     echo "   - Terminate EC2 instances"
