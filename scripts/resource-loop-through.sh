@@ -383,25 +383,59 @@ check_sagemaker_resources() {
     fi
 }
 
-# Function to check ECS services
+# Function to check ECS services and Fargate tasks
 check_ecs_services() {
     local region=$1
-    log "🔍 Checking ECS services in $region..."
+    log "🔍 Checking ECS services and Fargate tasks in $region..."
     
     local clusters=$(aws ecs list-clusters --region $region --query 'clusterArns[]' --output text 2>/dev/null || echo "")
+    local found_any=false
     
     if [ -n "$clusters" ] && [ "$clusters" != "None" ]; then
-        log_warning "⚠️  ECS clusters found in $region:"
+        log_critical "🚨 ACTIVE ECS CLUSTERS FOUND in $region:"
         echo "$clusters" | while read -r cluster_arn; do
             if [ -n "$cluster_arn" ] && [ "$cluster_arn" != "None" ]; then
                 local cluster_name=$(echo $cluster_arn | cut -d'/' -f2)
-                log_warning "  📦 $cluster_name"
+                log_critical "  💰 ECS Cluster: $cluster_name"
+                
+                # Check services in this cluster
+                local services=$(aws ecs list-services --region $region --cluster $cluster_name --query 'serviceArns[]' --output text 2>/dev/null || echo "")
+                if [ -n "$services" ] && [ "$services" != "None" ]; then
+                    log_critical "    📦 Services: $services"
+                fi
+                
+                # Check running tasks
+                local tasks=$(aws ecs list-tasks --region $region --cluster $cluster_name --query 'taskArns[]' --output text 2>/dev/null || echo "")
+                if [ -n "$tasks" ] && [ "$tasks" != "None" ]; then
+                    log_critical "    📦 Running Tasks: $tasks"
+                fi
             fi
         done
-        return 1
-    else
-        log_success "✅ No ECS clusters in $region"
+        found_any=true
+    fi
+    
+    # Check for standalone Fargate tasks (not in clusters)
+    local fargate_tasks=$(aws ecs list-tasks --region $region --launch-type FARGATE --query 'taskArns[]' --output text 2>/dev/null || echo "")
+    if [ -n "$fargate_tasks" ] && [ "$fargate_tasks" != "None" ]; then
+        log_critical "🚨 STANDALONE FARGATE TASKS FOUND in $region:"
+        echo "$fargate_tasks" | while read -r task_arn; do
+            if [ -n "$task_arn" ] && [ "$task_arn" != "None" ]; then
+                log_critical "  💰 Fargate Task: $task_arn"
+                # Get task details
+                local task_details=$(aws ecs describe-tasks --region $region --tasks $task_arn --query 'tasks[0].{LastStatus:lastStatus,DesiredStatus:desiredStatus,PlatformVersion:platformVersion}' --output table 2>/dev/null || echo "")
+                if [ -n "$task_details" ]; then
+                    echo "$task_details"
+                fi
+            fi
+        done
+        found_any=true
+    fi
+    
+    if [ "$found_any" = false ]; then
+        log_success "✅ No ECS clusters or Fargate tasks in $region"
         return 0
+    else
+        return 1
     fi
 }
 
@@ -441,6 +475,201 @@ check_route53_zones() {
         return 1
     else
         log_success "✅ No Route 53 hosted zones"
+        return 0
+    fi
+}
+
+# Function to check for hidden Kubernetes/container resources
+check_hidden_kubernetes_resources() {
+    local region=$1
+    log "🔍 Checking for hidden Kubernetes/container resources in $region..."
+    
+    local found_any=false
+    
+    # Check for EC2 instances that might be running Kubernetes manually
+    local k8s_instances=$(aws ec2 describe-instances --region $region \
+        --filters "Name=instance-state-name,Values=running,stopped,pending" \
+        --query 'Reservations[].Instances[?contains(KeyName, `kube`) || contains(KeyName, `eks`) || contains(Tags[?Key==`Name`].Value, `kube`) || contains(Tags[?Key==`Name`].Value, `eks`) || contains(Tags[?Key==`Name`].Value, `kubernetes`) || contains(Tags[?Key==`kubernetes.io/cluster`].Value, `owned`)].{InstanceId:InstanceId,State:State.Name,InstanceType:InstanceType,Name:Tags[?Key==`Name`].Value|[0],LaunchTime:LaunchTime}' \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -n "$k8s_instances" ] && [ "$k8s_instances" != "None" ]; then
+        log_critical "🚨 KUBERNETES-RELATED EC2 INSTANCES FOUND in $region:"
+        echo "$k8s_instances" | while read -r instance_id state instance_type name launch_time; do
+            if [ -n "$instance_id" ] && [ "$instance_id" != "None" ]; then
+                log_critical "  💰 $instance_id | $state | $instance_type | $name | $launch_time"
+            fi
+        done
+        found_any=true
+    fi
+    
+    # Check for Auto Scaling Groups that might be related to Kubernetes
+    local k8s_asgs=$(aws autoscaling describe-auto-scaling-groups --region $region \
+        --query 'AutoScalingGroups[?contains(AutoScalingGroupName, `kube`) || contains(AutoScalingGroupName, `eks`) || contains(AutoScalingGroupName, `kubernetes`)].{AutoScalingGroupName:AutoScalingGroupName,DesiredCapacity:DesiredCapacity,MinSize:MinSize,MaxSize:MaxSize,Instances:length(Instances)}' \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -n "$k8s_asgs" ] && [ "$k8s_asgs" != "None" ]; then
+        log_critical "🚨 KUBERNETES-RELATED AUTO SCALING GROUPS FOUND in $region:"
+        echo "$k8s_asgs" | while read -r asg_name desired min max instances; do
+            if [ -n "$asg_name" ] && [ "$asg_name" != "None" ]; then
+                log_critical "  💰 $asg_name | Desired:$desired | Min:$min | Max:$max | Instances:$instances"
+            fi
+        done
+        found_any=true
+    fi
+    
+    # Check for Load Balancers that might be related to Kubernetes
+    local k8s_lbs=$(aws elbv2 describe-load-balancers --region $region \
+        --query 'LoadBalancers[?contains(LoadBalancerName, `kube`) || contains(LoadBalancerName, `eks`) || contains(LoadBalancerName, `kubernetes`) || contains(Tags[?Key==`kubernetes.io/service-name`].Value, `service`)].{LoadBalancerName:LoadBalancerName,Type:Type,State:State.Code,DNSName:DNSName}' \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -n "$k8s_lbs" ] && [ "$k8s_lbs" != "None" ]; then
+        log_critical "🚨 KUBERNETES-RELATED LOAD BALANCERS FOUND in $region:"
+        echo "$k8s_lbs" | while read -r name type state dns; do
+            if [ -n "$name" ] && [ "$name" != "None" ]; then
+                log_critical "  💰 $name | $type | $state | $dns"
+            fi
+        done
+        found_any=true
+    fi
+    
+    # Check for Security Groups that might be related to Kubernetes
+    local k8s_sgs=$(aws ec2 describe-security-groups --region $region \
+        --filters "Name=group-name,Values=*kube*,*eks*,*kubernetes*" \
+        --query 'SecurityGroups[].{GroupId:GroupId,GroupName:GroupName,Description:Description}' \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -n "$k8s_sgs" ] && [ "$k8s_sgs" != "None" ]; then
+        log_warning "⚠️  KUBERNETES-RELATED SECURITY GROUPS FOUND in $region:"
+        echo "$k8s_sgs" | while read -r group_id group_name description; do
+            if [ -n "$group_id" ] && [ "$group_id" != "None" ]; then
+                log_warning "  📦 $group_id | $group_name | $description"
+            fi
+        done
+        found_any=true
+    fi
+    
+    # Check for VPCs that might be related to Kubernetes
+    local k8s_vpcs=$(aws ec2 describe-vpcs --region $region \
+        --filters "Name=tag:Name,Values=*kube*,*eks*,*kubernetes*" \
+        --query 'Vpcs[].{VpcId:VpcId,State:State,CidrBlock:CidrBlock}' \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -n "$k8s_vpcs" ] && [ "$k8s_vpcs" != "None" ]; then
+        log_warning "⚠️  KUBERNETES-RELATED VPCs FOUND in $region:"
+        echo "$k8s_vpcs" | while read -r vpc_id state cidr; do
+            if [ -n "$vpc_id" ] && [ "$vpc_id" != "None" ]; then
+                log_warning "  📦 $vpc_id | $state | $cidr"
+            fi
+        done
+        found_any=true
+    fi
+    
+    # Check for CloudFormation stacks that might contain Kubernetes resources
+    local k8s_stacks=$(aws cloudformation list-stacks --region $region \
+        --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+        --query 'StackSummaries[?contains(StackName, `kube`) || contains(StackName, `eks`) || contains(StackName, `kubernetes`)].{StackName:StackName,StackStatus:StackStatus,CreationTime:CreationTime}' \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -n "$k8s_stacks" ] && [ "$k8s_stacks" != "None" ]; then
+        log_warning "⚠️  KUBERNETES-RELATED CLOUDFORMATION STACKS FOUND in $region:"
+        echo "$k8s_stacks" | while read -r stack_name status creation_time; do
+            if [ -n "$stack_name" ] && [ "$stack_name" != "None" ]; then
+                log_warning "  📦 $stack_name | $status | $creation_time"
+            fi
+        done
+        found_any=true
+    fi
+    
+    if [ "$found_any" = false ]; then
+        log_success "✅ No hidden Kubernetes/container resources in $region"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check for EKS-related billing remnants
+check_eks_billing_remnants() {
+    local region=$1
+    log "🔍 Checking for EKS billing remnants in $region..."
+    
+    local found_any=false
+    
+    # Check for EKS-related CloudWatch log groups
+    local eks_logs=$(aws logs describe-log-groups --region $region \
+        --query 'logGroups[?contains(logGroupName, `/aws/eks`) || contains(logGroupName, `eks`)].{LogGroupName:logGroupName,StoredBytes:storedBytes,RetentionInDays:retentionInDays}' \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -n "$eks_logs" ] && [ "$eks_logs" != "None" ]; then
+        log_critical "🚨 EKS-RELATED CLOUDWATCH LOG GROUPS FOUND in $region:"
+        echo "$eks_logs" | while read -r log_group stored_bytes retention; do
+            if [ -n "$log_group" ] && [ "$log_group" != "None" ]; then
+                log_critical "  💰 $log_group | Stored: $stored_bytes bytes | Retention: $retention days"
+            fi
+        done
+        found_any=true
+    fi
+    
+    # Check for EKS-related ENI (Elastic Network Interfaces)
+    local eks_enis=$(aws ec2 describe-network-interfaces --region $region \
+        --filters "Name=description,Values=*eks*,*EKS*,*kubernetes*" \
+        --query 'NetworkInterfaces[].{NetworkInterfaceId:NetworkInterfaceId,Status:Status,Description:Description,PrivateIpAddress:PrivateIpAddress}' \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -n "$eks_enis" ] && [ "$eks_enis" != "None" ]; then
+        log_critical "🚨 EKS-RELATED NETWORK INTERFACES FOUND in $region:"
+        echo "$eks_enis" | while read -r eni_id status description private_ip; do
+            if [ -n "$eni_id" ] && [ "$eni_id" != "None" ]; then
+                log_critical "  💰 $eni_id | $status | $description | $private_ip"
+            fi
+        done
+        found_any=true
+    fi
+    
+    # Check for EKS service-linked roles (global, but check here for completeness)
+    local eks_roles=$(aws iam list-roles --query 'Roles[?contains(RoleName, `EKS`) || contains(RoleName, `eks`)].{RoleName:RoleName,CreateDate:CreateDate}' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$eks_roles" ] && [ "$eks_roles" != "None" ]; then
+        log_critical "🚨 EKS SERVICE-LINKED ROLES FOUND (Global):"
+        echo "$eks_roles" | while read -r role_name create_date; do
+            if [ -n "$role_name" ] && [ "$role_name" != "None" ]; then
+                log_critical "  💰 $role_name | Created: $create_date"
+            fi
+        done
+        found_any=true
+    fi
+    
+    if [ "$found_any" = false ]; then
+        log_success "✅ No EKS billing remnants in $region"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check for expensive instance types
+check_expensive_instances() {
+    local region=$1
+    log "🔍 Checking for expensive instance types in $region..."
+    
+    # Define expensive instance types (these can cost $1+/hour)
+    local expensive_types="c7i.8xlarge,c7i.4xlarge,c7i.2xlarge,m7i.8xlarge,m7i.4xlarge,m7i.2xlarge,r7i.8xlarge,r7i.4xlarge,r7i.2xlarge,p4d.24xlarge,p3.8xlarge,p3.2xlarge,g5.48xlarge,g5.24xlarge,g5.12xlarge"
+    
+    local expensive_instances=$(aws ec2 describe-instances --region $region \
+        --filters "Name=instance-state-name,Values=running,stopped,pending" \
+        --query "Reservations[].Instances[?contains('$expensive_types', InstanceType)].{InstanceId:InstanceId,State:State.Name,InstanceType:InstanceType,Name:Tags[?Key==\`Name\`].Value|[0],LaunchTime:LaunchTime}" \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -n "$expensive_instances" ] && [ "$expensive_instances" != "None" ]; then
+        log_critical "🚨 EXPENSIVE INSTANCE TYPES FOUND in $region (>$1/hour):"
+        echo "$expensive_instances" | while read -r instance_id state instance_type name launch_time; do
+            if [ -n "$instance_id" ] && [ "$instance_id" != "None" ]; then
+                log_critical "  💰💸 $instance_id | $state | $instance_type | $name | $launch_time"
+            fi
+        done
+        return 1
+    else
+        log_success "✅ No expensive instance types in $region"
         return 0
     fi
 }
@@ -508,7 +737,10 @@ check_region() {
     echo -e "${CYAN}🔍 DEEP PROBING REGION: $region${NC}"
     echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}"
     
-    # High-cost services first
+    # CRITICAL: Check for expensive instances first (like the c7i.8xlarge we found)
+    check_expensive_instances $region || ((total_issues++))
+    
+    # High-cost services
     check_ec2_instances $region || ((total_issues++))
     check_eks_clusters $region || ((total_issues++))
     check_rds_instances $region || ((total_issues++))
@@ -525,6 +757,12 @@ check_region() {
     check_ecs_services $region || ((total_issues++))
     check_s3_buckets $region || ((total_issues++))
     check_dynamodb_tables $region || ((total_issues++))
+    
+    # COMPREHENSIVE: Check for hidden Kubernetes/container resources
+    check_hidden_kubernetes_resources $region || ((total_issues++))
+    
+    # COMPREHENSIVE: Check for EKS billing remnants
+    check_eks_billing_remnants $region || ((total_issues++))
     
     echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}"
     if [ $total_issues -eq 0 ]; then
@@ -549,14 +787,20 @@ main() {
     echo "║     • EC2 Instances        • EKS Clusters        • RDS Instances            ║"
     echo "║     • Redshift Clusters    • ElastiCache        • OpenSearch Domains       ║"
     echo "║     • SageMaker Resources  • EFS File Systems   • Load Balancers           ║"
-    echo "║     • NAT Gateways                                                          ║"
+    echo "║     • NAT Gateways         • EXPENSIVE INSTANCES (>$1/hour)               ║"
     echo "║                                                                              ║"
     echo "║  ⚠️  MEDIUM PRIORITY (Medium Cost):                                         ║"
     echo "║     • Lambda Functions     • ECS Services       • S3 Buckets               ║"
     echo "║     • DynamoDB Tables      • CloudFront         • Route 53                 ║"
+    echo "║     • Fargate Tasks        • ECS Clusters                                   ║"
+    echo "║                                                                              ║"
+    echo "║  🔍 COMPREHENSIVE DEEP PROBE (Hidden Billing Sources):                     ║"
+    echo "║     • Hidden K8s Resources • EKS Billing Remnants • CloudWatch Logs        ║"
+    echo "║     • K8s-related ASGs     • K8s-related LBs     • K8s-related VPCs        ║"
+    echo "║     • EKS Service Roles    • Network Interfaces  • CloudFormation Stacks   ║"
     echo "║                                                                              ║"
     echo "║  ℹ️  LOW PRIORITY (Low Cost):                                               ║"
-    echo "║     • IAM Resources        • CloudWatch Logs    • Other Services           ║"
+    echo "║     • IAM Resources        • Security Groups     • Other Services           ║"
     echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     
