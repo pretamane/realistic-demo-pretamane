@@ -1,0 +1,79 @@
+# /complete-advanced-setup/networking/01-services.yaml
+# Service definitions extracted from portfolio-demo.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: contact-api-service
+  labels:
+    app: contact-api
+    component: main-application
+spec:
+  selector:
+    app: contact-api
+    component: main-application
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  type: ClusterIP
+---
+# Service for RClone mount monitoring
+apiVersion: v1
+kind: Service
+metadata:
+  name: rclone-mount-service
+  labels:
+    app: contact-api
+    component: rclone-mount
+spec:
+  selector:
+    app: contact-api
+    component: rclone-mount
+  ports:
+  - name: health
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+---
+# Service for S3 sync monitoring
+apiVersion: v1
+kind: Service
+metadata:
+  name: s3-sync-service
+  labels:
+    app: contact-api
+    component: s3-sync
+spec:
+  selector:
+    app: contact-api
+    component: s3-sync
+  ports:
+  - name: health
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  type: ClusterIP
+---
+# Headless service for StatefulSet scenarios
+apiVersion: v1
+kind: Service
+metadata:
+  name: contact-api-headless
+  labels:
+    app: contact-api
+    service-type: headless
+spec:
+  clusterIP: None
+  selector:
+    app: contact-api
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+    protocol: TCP

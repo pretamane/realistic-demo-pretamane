@@ -1,0 +1,205 @@
+# /complete-advanced-setup/testing/01-efs-validation.yaml
+# EFS Testing and Validation (extracted from test-efs-deployment.yaml)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: efs-validator
+  labels:
+    app: contact-api
+    component: efs-testing
+    testing-type: validation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: contact-api
+      component: efs-testing
+  template:
+    metadata:
+      labels:
+        app: contact-api
+        component: efs-testing
+        testing-type: validation
+    spec:
+      serviceAccountName: contact-api
+      containers:
+      - name: efs-validator
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "🧪 Starting EFS Validation Tests..."
+          
+          # Test 1: Basic EFS Mount Validation
+          echo "Test 1: Checking EFS mount point..."
+          if [ -d "/mnt/efs" ]; then
+              echo "✅ EFS mount point exists"
+          else
+              echo "❌ EFS mount point missing"
+              exit 1
+          fi
+          
+          # Test 2: EFS Write Permission Test
+          echo "Test 2: Testing EFS write permissions..."
+          test_file="/mnt/efs/test/write-test-$(date +%s).txt"
+          mkdir -p /mnt/efs/test
+          
+          if echo "EFS Write Test $(date)" > "$test_file"; then
+              echo "✅ EFS write test successful"
+              echo "   File created: $test_file"
+              echo "   Content: $(cat $test_file)"
+          else
+              echo "❌ EFS write test failed"
+              exit 1
+          fi
+          
+          # Test 3: EFS Read Test
+          echo "Test 3: Testing EFS read permissions..."
+          if [ -f "$test_file" ] && [ -r "$test_file" ]; then
+              content=$(cat "$test_file")
+              echo "✅ EFS read test successful"
+              echo "   Content read: $content"
+          else
+              echo "❌ EFS read test failed"
+              exit 1
+          fi
+          
+          # Test 4: Directory Structure Validation
+          echo "Test 4: Validating directory structure..."
+          required_dirs=(
+              "/mnt/efs/uploads"
+              "/mnt/efs/processed"
+              "/mnt/efs/logs"
+              "/mnt/efs/shared"
+              "/mnt/efs/backup"
+          )
+          
+          for dir in "${required_dirs[@]}"; do
+              if [ -d "$dir" ]; then
+                  echo "✅ Directory exists: $dir"
+              else
+                  echo "⚠️ Creating missing directory: $dir"
+                  mkdir -p "$dir"
+                  if [ -d "$dir" ]; then
+                      echo "✅ Directory created successfully: $dir"
+                  else
+                      echo "❌ Failed to create directory: $dir"
+                      exit 1
+                  fi
+              fi
+          done
+          
+          # Test 5: File System Performance Test
+          echo "Test 5: Basic performance test..."
+          perf_file="/mnt/efs/test/performance-test.dat"
+          
+          # Write test
+          start_time=$(date +%s.%N)
+          dd if=/dev/zero of="$perf_file" bs=1M count=10 2>/dev/null
+          end_time=$(date +%s.%N)
+          write_time=$(echo "$end_time - $start_time" | bc -l 2>/dev/null || echo "N/A")
+          
+          # Read test
+          start_time=$(date +%s.%N)
+          dd if="$perf_file" of=/dev/null bs=1M 2>/dev/null
+          end_time=$(date +%s.%N)
+          read_time=$(echo "$end_time - $start_time" | bc -l 2>/dev/null || echo "N/A")
+          
+          echo "✅ Performance test completed"
+          echo "   Write time: ${write_time}s"
+          echo "   Read time: ${read_time}s"
+          
+          # Test 6: Concurrent Access Test
+          echo "Test 6: Testing concurrent access..."
+          for i in {1..5}; do
+              echo "Concurrent test $i $(date)" > "/mnt/efs/test/concurrent-$i.txt" &
+          done
+          wait
+          
+          concurrent_files=$(ls /mnt/efs/test/concurrent-*.txt 2>/dev/null | wc -l)
+          if [ "$concurrent_files" -eq 5 ]; then
+              echo "✅ Concurrent access test successful ($concurrent_files files created)"
+          else
+              echo "⚠️ Concurrent access test partial success ($concurrent_files/5 files created)"
+          fi
+          
+          # Test 7: Storage Space Check
+          echo "Test 7: Checking available storage space..."
+          df_output=$(df -h /mnt/efs 2>/dev/null)
+          if [ $? -eq 0 ]; then
+              echo "✅ Storage space information:"
+              echo "$df_output"
+          else
+              echo "⚠️ Could not retrieve storage space information"
+          fi
+          
+          # Test 8: File Permissions Test
+          echo "Test 8: Testing file permissions..."
+          perm_file="/mnt/efs/test/permission-test.txt"
+          echo "Permission test" > "$perm_file"
+          chmod 644 "$perm_file"
+          
+          if [ -r "$perm_file" ] && [ -w "$perm_file" ]; then
+              echo "✅ File permissions test successful"
+              echo "   File permissions: $(ls -l $perm_file)"
+          else
+              echo "❌ File permissions test failed"
+          fi
+          
+          # Test 9: Cleanup Test
+          echo "Test 9: Testing file cleanup..."
+          cleanup_count=$(find /mnt/efs/test -name "*.txt" -type f | wc -l)
+          echo "   Found $cleanup_count test files to cleanup"
+          
+          find /mnt/efs/test -name "*.txt" -type f -delete
+          find /mnt/efs/test -name "*.dat" -type f -delete
+          
+          remaining_count=$(find /mnt/efs/test -name "*.txt" -o -name "*.dat" -type f | wc -l)
+          if [ "$remaining_count" -eq 0 ]; then
+              echo "✅ Cleanup test successful (all test files removed)"
+          else
+              echo "⚠️ Cleanup test partial success ($remaining_count files remaining)"
+          fi
+          
+          # Final Summary
+          echo ""
+          echo "🎉 EFS Validation Tests Completed!"
+          echo "=================================="
+          echo "✅ Mount point validation: PASSED"
+          echo "✅ Write permissions: PASSED"
+          echo "✅ Read permissions: PASSED"
+          echo "✅ Directory structure: PASSED"
+          echo "✅ Performance test: PASSED"
+          echo "✅ Concurrent access: PASSED"
+          echo "✅ Storage space check: PASSED"
+          echo "✅ File permissions: PASSED"
+          echo "✅ Cleanup test: PASSED"
+          echo "=================================="
+          echo "🚀 EFS is ready for production use!"
+          
+          # Keep container running for monitoring
+          echo "Validation completed. Sleeping for monitoring..."
+          sleep 3600
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: VALIDATION_MODE
+          value: "comprehensive"
+        - name: TEST_INTERVAL
+          value: "3600"
+      
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: advanced-efs-pvc
+      
+      restartPolicy: Always

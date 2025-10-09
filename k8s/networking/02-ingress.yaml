@@ -1,0 +1,111 @@
+# /complete-advanced-setup/networking/02-ingress.yaml
+# Enhanced Ingress configuration extracted from portfolio-demo.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: contact-api-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '3'
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=60
+  labels:
+    app: contact-api
+    component: ingress
+spec:
+  rules:
+  - host: api.realistic-demo-pretamane.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: contact-api-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: contact-api-service
+            port:
+              number: 80
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: contact-api-service
+            port:
+              number: 80
+      - path: /docs
+        pathType: Prefix
+        backend:
+          service:
+            name: contact-api-service
+            port:
+              number: 80
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: contact-api-service
+            port:
+              number: 80
+---
+# Internal ingress for monitoring and admin functions
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: contact-api-internal-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+  labels:
+    app: contact-api
+    component: internal-ingress
+spec:
+  rules:
+  - host: internal.realistic-demo-pretamane.com
+    http:
+      paths:
+      - path: /admin
+        pathType: Prefix
+        backend:
+          service:
+            name: contact-api-service
+            port:
+              number: 80
+      - path: /metrics
+        pathType: Prefix
+        backend:
+          service:
+            name: contact-api-service
+            port:
+              number: 9090
+      - path: /storage/status
+        pathType: Exact
+        backend:
+          service:
+            name: contact-api-service
+            port:
+              number: 80
+      - path: /logs
+        pathType: Prefix
+        backend:
+          service:
+            name: contact-api-service
+            port:
+              number: 80

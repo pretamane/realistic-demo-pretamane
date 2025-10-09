@@ -1,0 +1,204 @@
+# Helm Repositories Configuration
+# Extracted from: ansible/group_vars/all.yml (helm_repositories section)
+# Enhanced with additional repositories and metadata
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: helm-repositories-config
+  labels:
+    app: deployment-config
+    component: helm
+data:
+  repositories.yaml: |
+    repositories:
+      # Metrics and Monitoring
+      - name: metrics-server
+        url: https://kubernetes-sigs.github.io/metrics-server/
+        description: "Kubernetes Metrics Server for HPA and resource monitoring"
+        
+      - name: prometheus-community
+        url: https://prometheus-community.github.io/helm-charts
+        description: "Prometheus monitoring stack"
+        
+      - name: grafana
+        url: https://grafana.github.io/helm-charts
+        description: "Grafana dashboards and visualization"
+      
+      # Auto-scaling
+      - name: autoscaler
+        url: https://kubernetes.github.io/autoscaler
+        description: "Kubernetes Cluster Autoscaler"
+        
+      # AWS Services
+      - name: eks
+        url: https://aws.github.io/eks-charts
+        description: "AWS EKS official charts (ALB Controller, CloudWatch, etc.)"
+        
+      - name: aws-ebs-csi-driver
+        url: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+        description: "AWS EBS CSI Driver for persistent volumes"
+        
+      - name: aws-efs-csi-driver
+        url: https://kubernetes-sigs.github.io/aws-efs-csi-driver
+        description: "AWS EFS CSI Driver for shared file systems"
+        
+      # Ingress Controllers
+      - name: ingress-nginx
+        url: https://kubernetes.github.io/ingress-nginx
+        description: "NGINX Ingress Controller"
+        
+      # Service Mesh (optional)
+      - name: istio
+        url: https://istio-release.storage.googleapis.com/charts
+        description: "Istio Service Mesh"
+        
+      # Security
+      - name: falco-security
+        url: https://falcosecurity.github.io/charts
+        description: "Falco runtime security monitoring"
+        
+      # Storage
+      - name: longhorn
+        url: https://charts.longhorn.io
+        description: "Longhorn distributed block storage"
+        
+      # Databases
+      - name: bitnami
+        url: https://charts.bitnami.com/bitnami
+        description: "Bitnami application charts (Redis, PostgreSQL, etc.)"
+        
+      # CI/CD
+      - name: argo
+        url: https://argoproj.github.io/argo-helm
+        description: "ArgoCD GitOps and Argo Workflows"
+        
+      - name: jenkins
+        url: https://charts.jenkins.io
+        description: "Jenkins CI/CD"
+        
+      # Logging
+      - name: elastic
+        url: https://helm.elastic.co
+        description: "Elastic Stack (Elasticsearch, Kibana, Logstash)"
+        
+      - name: fluent
+        url: https://fluent.github.io/helm-charts
+        description: "Fluent Bit and Fluentd logging"
+
+  # Helm releases to deploy (extracted from Ansible)
+  releases.yaml: |
+    releases:
+      # Essential Infrastructure
+      - name: metrics-server
+        repository: metrics-server
+        chart: metrics-server
+        namespace: kube-system
+        version: "3.11.0"
+        values:
+          args:
+            - --kubelet-insecure-tls
+            - --kubelet-preferred-address-types=InternalIP
+        priority: 1
+        
+      - name: cluster-autoscaler
+        repository: autoscaler
+        chart: cluster-autoscaler
+        namespace: kube-system
+        version: "9.29.0"
+        values:
+          autoDiscovery:
+            clusterName: "${PROJECT_NAME}-cluster"
+          awsRegion: "${AWS_REGION}"
+          rbac:
+            serviceAccount:
+              create: false
+              name: cluster-autoscaler
+              annotations:
+                eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${PROJECT_NAME}-cluster-autoscaler-role"
+        priority: 2
+        
+      - name: aws-load-balancer-controller
+        repository: eks
+        chart: aws-load-balancer-controller
+        namespace: kube-system
+        version: "1.6.2"
+        values:
+          clusterName: "${PROJECT_NAME}-cluster"
+          serviceAccount:
+            create: false
+            name: aws-load-balancer-controller
+            annotations:
+              eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${PROJECT_NAME}-aws-load-balancer-controller-role"
+        priority: 3
+        
+      - name: aws-efs-csi-driver
+        repository: aws-efs-csi-driver
+        chart: aws-efs-csi-driver
+        namespace: kube-system
+        version: "2.5.1"
+        values:
+          controller:
+            serviceAccount:
+              create: false
+              name: efs-csi-controller-sa
+              annotations:
+                eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${PROJECT_NAME}-efs-csi-driver-role"
+        priority: 4
+        
+      - name: aws-cloudwatch-metrics
+        repository: eks
+        chart: aws-cloudwatch-metrics
+        namespace: amazon-cloudwatch
+        version: "0.0.7"
+        values:
+          clusterName: "${PROJECT_NAME}-cluster"
+          serviceAccount:
+            create: false
+            name: cloudwatch-agent
+            annotations:
+              eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${PROJECT_NAME}-cloudwatch-agent-role"
+        priority: 5
+        
+      # Optional Monitoring Stack
+      - name: prometheus
+        repository: prometheus-community
+        chart: kube-prometheus-stack
+        namespace: monitoring
+        version: "55.0.0"
+        enabled: false  # Set to true to enable
+        values:
+          grafana:
+            enabled: true
+            adminPassword: "admin123"  # Change in production
+          prometheus:
+            prometheusSpec:
+              retention: 30d
+              storageSpec:
+                volumeClaimTemplate:
+                  spec:
+                    storageClassName: gp3
+                    accessModes: ["ReadWriteOnce"]
+                    resources:
+                      requests:
+                        storage: 50Gi
+        priority: 10
+
+  # Repository update configuration
+  update-config.yaml: |
+    update:
+      # How often to update repositories (in minutes)
+      interval: 60
+      
+      # Whether to update repositories before each deployment
+      before_deployment: true
+      
+      # Whether to verify repository certificates
+      verify_certificates: true
+      
+      # Timeout for repository operations (in seconds)
+      timeout: 300
+      
+      # Retry configuration
+      retries: 3
+      retry_delay: 10

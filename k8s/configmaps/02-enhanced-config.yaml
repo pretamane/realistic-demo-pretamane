@@ -1,0 +1,185 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: enhanced-app-config
+  labels:
+    app: enhanced-document-processor
+    component: configuration
+data:
+  app-config.json: |
+    {
+      "application": {
+        "name": "Enterprise Document Management & Contact Intelligence System",
+        "version": "2.0.0",
+        "environment": "production",
+        "debug": false
+      },
+      "document_processing": {
+        "max_file_size": 52428800,
+        "allowed_extensions": [".pdf", ".doc", ".docx", ".txt", ".json", ".csv", ".xlsx", ".pptx"],
+        "processing_timeout": 300,
+        "batch_size": 10,
+        "enable_ocr": true,
+        "enable_nlp": true,
+        "enable_analytics": true,
+        "enable_search_indexing": true
+      },
+      "contact_intelligence": {
+        "enable_enrichment": true,
+        "enable_analytics": true,
+        "enable_notifications": true,
+        "complexity_scoring": true,
+        "entity_extraction": true
+      },
+      "search": {
+        "index_name": "documents",
+        "max_results": 100,
+        "enable_fuzzy_search": true,
+        "enable_highlighting": true,
+        "enable_suggestions": true
+      },
+      "analytics": {
+        "enable_real_time": true,
+        "report_interval": 300,
+        "enable_trends": true,
+        "enable_insights": true
+      },
+      "storage": {
+        "efs_mount_path": "/mnt/efs",
+        "upload_directory": "/mnt/efs/uploads",
+        "processed_directory": "/mnt/efs/processed",
+        "temp_directory": "/mnt/efs/temp",
+        "analytics_directory": "/mnt/efs/analytics",
+        "search_index_directory": "/mnt/efs/search-index"
+      },
+      "aws": {
+        "region": "ap-southeast-1",
+        "s3_data_bucket": "realistic-demo-pretamane-data",
+        "s3_index_bucket": "realistic-demo-pretamane-index",
+        "s3_backup_bucket": "realistic-demo-pretamane-backup",
+        "dynamodb_contacts_table": "realistic-demo-pretamane-contact-submissions",
+        "dynamodb_visitors_table": "realistic-demo-pretamane-website-visitors",
+        "dynamodb_documents_table": "realistic-demo-pretamane-documents"
+      },
+      "monitoring": {
+        "enable_metrics": true,
+        "metrics_port": 9090,
+        "health_check_interval": 30,
+        "enable_logging": true,
+        "log_level": "INFO"
+      }
+    }
+  
+  processing-rules.json: |
+    {
+      "document_classification": {
+        "business_proposal": {
+          "keywords": ["proposal", "business", "project", "budget", "timeline"],
+          "priority": "high",
+          "auto_tag": ["business", "proposal"]
+        },
+        "contract": {
+          "keywords": ["contract", "agreement", "terms", "conditions", "legal"],
+          "priority": "high",
+          "auto_tag": ["legal", "contract"]
+        },
+        "invoice": {
+          "keywords": ["invoice", "bill", "payment", "amount", "due"],
+          "priority": "medium",
+          "auto_tag": ["financial", "invoice"]
+        },
+        "report": {
+          "keywords": ["report", "analysis", "summary", "findings", "conclusion"],
+          "priority": "medium",
+          "auto_tag": ["report", "analysis"]
+        }
+      },
+      "content_analysis": {
+        "extract_entities": true,
+        "extract_keywords": true,
+        "calculate_complexity": true,
+        "detect_language": true,
+        "extract_metadata": true
+      },
+      "notification_rules": {
+        "on_upload": true,
+        "on_processing_complete": true,
+        "on_processing_error": true,
+        "on_analytics_update": false
+      }
+    }
+  
+  search-config.json: |
+    {
+      "opensearch": {
+        "index_settings": {
+          "number_of_shards": 1,
+          "number_of_replicas": 0,
+          "refresh_interval": "30s",
+          "max_result_window": 10000
+        },
+        "mapping_settings": {
+          "dynamic": true,
+          "date_detection": true,
+          "numeric_detection": true
+        },
+        "analysis": {
+          "analyzer": {
+            "custom_text_analyzer": {
+              "type": "custom",
+              "tokenizer": "standard",
+              "filter": ["lowercase", "stop", "snowball"]
+            }
+          }
+        }
+      },
+      "search_features": {
+        "fuzzy_search": true,
+        "highlighting": true,
+        "suggestions": true,
+        "facets": true,
+        "sorting": true
+      },
+      "performance": {
+        "cache_size": "100mb",
+        "cache_ttl": 3600,
+        "max_concurrent_searches": 10
+      }
+    }
+  
+  analytics-config.json: |
+    {
+      "analytics": {
+        "real_time": {
+          "enabled": true,
+          "update_interval": 60,
+          "metrics": ["upload_rate", "processing_rate", "error_rate"]
+        },
+        "reports": {
+          "daily": true,
+          "weekly": true,
+          "monthly": true,
+          "custom": true
+        },
+        "insights": {
+          "trend_analysis": true,
+          "anomaly_detection": true,
+          "predictive_analytics": false,
+          "recommendations": true
+        },
+        "visualization": {
+          "charts": true,
+          "dashboards": true,
+          "export_formats": ["json", "csv", "pdf"]
+        }
+      },
+      "data_retention": {
+        "raw_data": 90,
+        "processed_data": 365,
+        "analytics_data": 730,
+        "logs": 30
+      }
+    }
+
+
+

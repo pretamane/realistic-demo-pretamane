@@ -1,0 +1,223 @@
+# /complete-advanced-setup/deployments/03-rclone-mount-sidecar.yaml
+# RClone Mounting Service for Real-time S3 Access
+# Conflict-free: Uses separate buckets from S3 sync service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rclone-mount-service
+  labels:
+    app: contact-api
+    component: rclone-mount
+    version: advanced
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: contact-api
+      component: rclone-mount
+  template:
+    metadata:
+      labels:
+        app: contact-api
+        component: rclone-mount
+        version: advanced
+    spec:
+      serviceAccountName: contact-api
+      containers:
+      - name: rclone-mount
+        image: rclone/rclone:latest
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "🔄 Starting Advanced RClone Mounting Service..."
+            
+            # Create RClone config for mounting (separate from sync service)
+            mkdir -p /root/.config/rclone-mount
+            cat > /root/.config/rclone-mount/rclone.conf << EOF
+            [s3-data]
+            type = s3
+            provider = AWS
+            region = ap-southeast-1
+            access_key_id = ${AWS_ACCESS_KEY_ID}
+            secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+            
+            [s3-index]
+            type = s3
+            provider = AWS
+            region = ap-southeast-1
+            access_key_id = ${AWS_ACCESS_KEY_ID}
+            secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+            
+            [s3-realtime]
+            type = s3
+            provider = AWS
+            region = ap-southeast-1
+            access_key_id = ${AWS_ACCESS_KEY_ID}
+            secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+            EOF
+            
+            # Create mount points
+            mkdir -p /mnt/s3/{data,index,realtime}
+            
+            # Mount S3 data bucket for real-time access
+            echo "📁 Mounting S3 data bucket..."
+            rclone mount s3-data:${S3_DATA_BUCKET} /mnt/s3/data \
+              --config /root/.config/rclone-mount/rclone.conf \
+              --allow-other \
+              --vfs-cache-mode writes \
+              --vfs-cache-max-size 200M \
+              --vfs-cache-max-age 2h \
+              --vfs-read-chunk-size 128M \
+              --vfs-read-chunk-size-limit 1G \
+              --buffer-size 64M \
+              --daemon &
+            
+            echo "📁 Mounting S3 index bucket..."
+            rclone mount s3-index:${S3_INDEX_BUCKET} /mnt/s3/index \
+              --config /root/.config/rclone-mount/rclone.conf \
+              --allow-other \
+              --vfs-cache-mode writes \
+              --vfs-cache-max-size 100M \
+              --vfs-cache-max-age 1h \
+              --vfs-read-chunk-size 64M \
+              --buffer-size 32M \
+              --daemon &
+            
+            echo "📁 Mounting S3 realtime bucket..."
+            rclone mount s3-realtime:${S3_REALTIME_BUCKET} /mnt/s3/realtime \
+              --config /root/.config/rclone-mount/rclone.conf \
+              --allow-other \
+              --vfs-cache-mode writes \
+              --vfs-cache-max-size 100M \
+              --vfs-cache-max-age 30m \
+              --vfs-read-chunk-size 32M \
+              --buffer-size 16M \
+              --daemon &
+            
+            # Wait for mounts to be ready
+            echo "⏳ Waiting for mounts to be ready..."
+            sleep 10
+            
+            # Verify mounts
+            echo "✅ Verifying mounts..."
+            if mountpoint -q /mnt/s3/data; then
+                echo "✅ S3 data bucket mounted successfully"
+            else
+                echo "❌ S3 data bucket mount failed"
+            fi
+            
+            if mountpoint -q /mnt/s3/index; then
+                echo "✅ S3 index bucket mounted successfully"
+            else
+                echo "❌ S3 index bucket mount failed"
+            fi
+            
+            if mountpoint -q /mnt/s3/realtime; then
+                echo "✅ S3 realtime bucket mounted successfully"
+            else
+                echo "❌ S3 realtime bucket mount failed"
+            fi
+            
+            # Create test files to verify write access
+            echo "🧪 Testing write access..."
+            echo "Mount test $(date)" > /mnt/s3/data/mount-test.txt 2>/dev/null && echo "✅ Data bucket writable" || echo "⚠️ Data bucket read-only"
+            echo "Index test $(date)" > /mnt/s3/index/index-test.txt 2>/dev/null && echo "✅ Index bucket writable" || echo "⚠️ Index bucket read-only"
+            echo "Realtime test $(date)" > /mnt/s3/realtime/realtime-test.txt 2>/dev/null && echo "✅ Realtime bucket writable" || echo "⚠️ Realtime bucket read-only"
+            
+            # Monitor mounts and keep container running
+            echo "🔄 RClone mount service ready. Monitoring mounts..."
+            while true; do
+                # Check mount health every 5 minutes
+                sleep 300
+                
+                echo "$(date): Checking mount health..."
+                
+                # Check if mounts are still active
+                if ! mountpoint -q /mnt/s3/data; then
+                    echo "⚠️ Data mount lost, attempting remount..."
+                    rclone mount s3-data:${S3_DATA_BUCKET} /mnt/s3/data \
+                      --config /root/.config/rclone-mount/rclone.conf \
+                      --allow-other --vfs-cache-mode writes --daemon &
+                fi
+                
+                if ! mountpoint -q /mnt/s3/index; then
+                    echo "⚠️ Index mount lost, attempting remount..."
+                    rclone mount s3-index:${S3_INDEX_BUCKET} /mnt/s3/index \
+                      --config /root/.config/rclone-mount/rclone.conf \
+                      --allow-other --vfs-cache-mode writes --daemon &
+                fi
+                
+                if ! mountpoint -q /mnt/s3/realtime; then
+                    echo "⚠️ Realtime mount lost, attempting remount..."
+                    rclone mount s3-realtime:${S3_REALTIME_BUCKET} /mnt/s3/realtime \
+                      --config /root/.config/rclone-mount/rclone.conf \
+                      --allow-other --vfs-cache-mode writes --daemon &
+                fi
+                
+                echo "$(date): Mount health check completed"
+            done
+        volumeMounts:
+        - name: s3-mount
+          mountPath: /mnt/s3
+          mountPropagation: Bidirectional
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: storage-credentials
+              key: aws-access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: storage-credentials
+              key: aws-secret-access-key
+        - name: S3_DATA_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_DATA_BUCKET
+        - name: S3_INDEX_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_INDEX_BUCKET
+        - name: S3_REALTIME_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_REALTIME_BUCKET
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - SYS_ADMIN
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "mountpoint -q /mnt/s3/data && mountpoint -q /mnt/s3/index && mountpoint -q /mnt/s3/realtime"
+          initialDelaySeconds: 30
+          periodSeconds: 60
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "mountpoint -q /mnt/s3/data && mountpoint -q /mnt/s3/index && mountpoint -q /mnt/s3/realtime"
+          initialDelaySeconds: 15
+          periodSeconds: 30
+      
+      volumes:
+      - name: s3-mount
+        emptyDir: {}
+      
+      restartPolicy: Always

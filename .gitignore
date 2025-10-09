@@ -5,6 +5,8 @@ terraform.tfstate
 terraform.tfstate.backup
 terraform.tfvars
 *.tfvars
+tfplan
+*.tfplan
 
 # Binaries & Executables
 *.exe
@@ -44,3 +46,39 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+# env.template removed - using config/environments/ instead
+
+# Credentials & Secrets
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# Deployment Scripts
+scripts/deploy*.sh
+scripts/cleanup*.sh
+scripts/nuke*.sh
+scripts/post-autoscale-nuke.sh
+scripts/monitor-costs.sh
+scripts/cost-protection-guardian.sh
+scripts/daily-cost-check.sh
+scripts/setup-cost-protection.sh
+scripts/secure-deploy.sh
+scripts/setup-credentials.sh
+scripts/setup-secure-credentials.sh
+scripts/*autoscaling*.sh
+scripts/quick-portfolio-demo.sh
+scripts/resource-loop-through.sh
+
+# Documentation Files
+*.md
+!/README.md
+docs/
+old-files-backup/
+
+# Auto-generated cleanup files
+auto-cleanup.sh
+cleanup.pid

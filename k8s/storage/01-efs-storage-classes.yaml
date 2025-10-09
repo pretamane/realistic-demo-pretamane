@@ -1,0 +1,93 @@
+# /complete-advanced-setup/storage/01-efs-storage-classes.yaml
+# Enhanced EFS Storage Classes with uid/gid parameters
+# Extracted from efs-contact-api.yaml and advanced-efs-pv.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-sc-advanced
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+  labels:
+    app: contact-api
+    storage-type: efs
+    tier: advanced
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-0075863cfd5b77ae1
+  accessPointId: fsap-0698cf703fee51337
+  directoryPerms: "0755"
+  uid: "1000"        # Enhanced: User ID specification
+  gid: "1000"        # Enhanced: Group ID specification
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+---
+# Shared access storage class for multi-pod scenarios
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-sc-shared
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+  labels:
+    app: contact-api
+    storage-type: efs
+    tier: shared
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-0075863cfd5b77ae1
+  accessPointId: fsap-0698cf703fee51337
+  directoryPerms: "0755"
+  uid: "1000"
+  gid: "1000"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+---
+# Secure storage class with restricted permissions
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-sc-secure
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+  labels:
+    app: contact-api
+    storage-type: efs
+    tier: secure
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-0075863cfd5b77ae1
+  accessPointId: fsap-0698cf703fee51337
+  directoryPerms: "0750"  # More restrictive permissions
+  uid: "1000"
+  gid: "1000"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+---
+# High-performance storage class for intensive workloads
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-sc-performance
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+  labels:
+    app: contact-api
+    storage-type: efs
+    tier: performance
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-0075863cfd5b77ae1
+  accessPointId: fsap-0698cf703fee51337
+  directoryPerms: "0755"
+  uid: "1000"
+  gid: "1000"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: Immediate

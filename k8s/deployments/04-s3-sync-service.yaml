@@ -1,0 +1,269 @@
+# /complete-advanced-setup/deployments/04-s3-sync-service.yaml
+# S3 Sync Service for Scheduled Backup and Archival
+# Conflict-free: Uses different buckets than RClone mounting service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3-sync-service
+  labels:
+    app: contact-api
+    component: s3-sync
+    version: advanced
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: contact-api
+      component: s3-sync
+  template:
+    metadata:
+      labels:
+        app: contact-api
+        component: s3-sync
+        version: advanced
+    spec:
+      serviceAccountName: contact-api
+      containers:
+      - name: s3-sync
+        image: rclone/rclone:latest
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "🔄 Starting Advanced S3 Synchronization Service..."
+          
+          # Create RClone config for sync (separate from mount service)
+          mkdir -p /root/.config/rclone-sync
+          cat > /root/.config/rclone-sync/rclone.conf << 'EOF'
+          [s3-archive]
+          type = s3
+          provider = AWS
+          region = ap-southeast-1
+          access_key_id = ${AWS_ACCESS_KEY_ID}
+          secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+          
+          [s3-logs]
+          type = s3
+          provider = AWS
+          region = ap-southeast-1
+          access_key_id = ${AWS_ACCESS_KEY_ID}
+          secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+          
+          [s3-backup]
+          type = s3
+          provider = AWS
+          region = ap-southeast-1
+          access_key_id = ${AWS_ACCESS_KEY_ID}
+          secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+          EOF
+          
+          # Create sync status tracking
+          mkdir -p /tmp/sync-status
+          echo "$(date): S3 Sync Service initialized" > /tmp/sync-status/service.log
+          
+          # Function to perform sync with error handling
+          perform_sync() {
+              local source=$1
+              local destination=$2
+              local sync_type=$3
+              
+              echo "$(date): Starting $sync_type sync: $source -> $destination"
+              
+              if [ ! -d "$source" ]; then
+                  echo "$(date): Warning - Source directory $source does not exist, skipping"
+                  return 0
+              fi
+              
+              # Check if source has files
+              file_count=$(find "$source" -type f 2>/dev/null | wc -l)
+              if [ "$file_count" -eq 0 ]; then
+                  echo "$(date): No files to sync in $source"
+                  return 0
+              fi
+              
+              echo "$(date): Found $file_count files to sync"
+              
+              # Perform sync with progress and error handling
+              if rclone sync "$source" "$destination" \
+                  --config /root/.config/rclone-sync/rclone.conf \
+                  --progress \
+                  --log-level INFO \
+                  --stats 30s \
+                  --transfers 4 \
+                  --checkers 8 \
+                  --retries 3 \
+                  --low-level-retries 10 \
+                  --stats-file-name-length 0; then
+                  
+                  echo "$(date): ✅ $sync_type sync completed successfully"
+                  echo "$(date): $sync_type sync completed - $file_count files" >> /tmp/sync-status/service.log
+                  return 0
+              else
+                  echo "$(date): ❌ $sync_type sync failed"
+                  echo "$(date): $sync_type sync failed - $file_count files" >> /tmp/sync-status/service.log
+                  return 1
+              fi
+          }
+          
+          # Function to get sync statistics
+          get_sync_stats() {
+              echo "$(date): === Sync Statistics ==="
+              
+              # EFS usage
+              if [ -d "/mnt/efs" ]; then
+                  echo "EFS Usage:"
+                  du -sh /mnt/efs/* 2>/dev/null || echo "No EFS data"
+              fi
+              
+              # File counts
+              echo "File Counts:"
+              echo "  Processed files: $(find /mnt/efs/processed -type f 2>/dev/null | wc -l)"
+              echo "  Log files: $(find /mnt/efs/logs -type f 2>/dev/null | wc -l)"
+              echo "  Upload files: $(find /mnt/efs/uploads -type f 2>/dev/null | wc -l)"
+              
+              # Recent sync history
+              echo "Recent Sync History:"
+              tail -5 /tmp/sync-status/service.log 2>/dev/null || echo "No sync history"
+              
+              echo "=========================="
+          }
+          
+          # Function to cleanup old files based on retention policy
+          cleanup_old_files() {
+              local retention_days=${RETENTION_DAYS:-30}
+              
+              echo "$(date): Starting cleanup of files older than $retention_days days"
+              
+              # Cleanup processed files
+              if [ -d "/mnt/efs/processed" ]; then
+                  find /mnt/efs/processed -type f -mtime +$retention_days -delete 2>/dev/null
+                  cleaned_processed=$(find /mnt/efs/processed -type f -mtime +$retention_days 2>/dev/null | wc -l)
+                  echo "$(date): Cleaned $cleaned_processed old processed files"
+              fi
+              
+              # Cleanup old logs (keep more recent)
+              local log_retention_days=$((retention_days * 2))
+              if [ -d "/mnt/efs/logs" ]; then
+                  find /mnt/efs/logs -name "*.log" -type f -mtime +$log_retention_days -delete 2>/dev/null
+                  cleaned_logs=$(find /mnt/efs/logs -name "*.log" -type f -mtime +$log_retention_days 2>/dev/null | wc -l)
+                  echo "$(date): Cleaned $cleaned_logs old log files"
+              fi
+          }
+          
+          # Main sync loop
+          echo "🔄 Starting continuous sync service..."
+          echo "📋 Sync Configuration:"
+          echo "  - Processed files -> S3 Archive Bucket"
+          echo "  - Log files -> S3 Logs Bucket"
+          echo "  - Backup files -> S3 Backup Bucket"
+          echo "  - Sync interval: ${SYNC_INTERVAL_MINUTES:-5} minutes"
+          echo "  - Retention days: ${RETENTION_DAYS:-30}"
+          
+          sync_counter=0
+          
+          while true; do
+              sync_counter=$((sync_counter + 1))
+              echo ""
+              echo "$(date): ========== Sync Cycle #$sync_counter =========="
+              
+              # Sync processed files to archive bucket
+              perform_sync "/mnt/efs/processed" "s3-archive:${S3_ARCHIVE_BUCKET}/processed" "PROCESSED_FILES"
+              
+              # Sync logs to logs bucket
+              perform_sync "/mnt/efs/logs" "s3-logs:${S3_LOGS_BUCKET}/logs" "LOG_FILES"
+              
+              # Sync any backup files to backup bucket
+              perform_sync "/mnt/efs/backup" "s3-backup:${S3_BACKUP_BUCKET}/backup" "BACKUP_FILES"
+              
+              # Sync shared data configurations
+              perform_sync "/shared-data/config" "s3-backup:${S3_BACKUP_BUCKET}/config" "CONFIG_FILES"
+              
+              # Every 10th cycle, perform cleanup and show stats
+              if [ $((sync_counter % 10)) -eq 0 ]; then
+                  echo "$(date): Performing maintenance tasks..."
+                  cleanup_old_files
+                  get_sync_stats
+              fi
+              
+              echo "$(date): Sync cycle #$sync_counter completed. Next sync in ${SYNC_INTERVAL_MINUTES:-5} minutes."
+              echo "$(date): =========================================="
+              
+              # Wait for next sync interval
+              sleep $((${SYNC_INTERVAL_MINUTES:-5} * 60))
+          done
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        - name: shared-storage
+          mountPath: /shared-data
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: storage-credentials
+              key: aws-access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: storage-credentials
+              key: aws-secret-access-key
+        - name: S3_ARCHIVE_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_ARCHIVE_BUCKET
+        - name: S3_LOGS_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_LOGS_BUCKET
+        - name: S3_BACKUP_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: S3_BACKUP_BUCKET
+        - name: SYNC_INTERVAL_MINUTES
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: SYNC_INTERVAL_MINUTES
+              optional: true
+        - name: RETENTION_DAYS
+          valueFrom:
+            configMapKeyRef:
+              name: storage-config
+              key: RETENTION_DAYS
+              optional: true
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "test -f /tmp/sync-status/service.log && test $(find /tmp/sync-status/service.log -mmin -10 | wc -l) -gt 0"
+          initialDelaySeconds: 60
+          periodSeconds: 300  # Check every 5 minutes
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "test -f /tmp/sync-status/service.log"
+          initialDelaySeconds: 10
+          periodSeconds: 30
+      
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: advanced-efs-pvc
+      - name: shared-storage
+        emptyDir:
+          sizeLimit: 1Gi
+      
+      restartPolicy: Always

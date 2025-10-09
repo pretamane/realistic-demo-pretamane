@@ -1,0 +1,75 @@
+# /complete-advanced-setup/storage/02-efs-persistent-volumes.yaml
+# Enhanced EFS Persistent Volumes
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: advanced-efs-pv
+  labels:
+    app: contact-api
+    storage-type: efs
+    tier: advanced
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: efs-sc-advanced
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-0075863cfd5b77ae1::fsap-0698cf703fee51337
+    volumeAttributes:
+      provisioningMode: efs-ap
+      fileSystemId: fs-0075863cfd5b77ae1
+      accessPointId: fsap-0698cf703fee51337
+---
+# Shared EFS Persistent Volume for multi-pod access
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: shared-efs-pv
+  labels:
+    app: contact-api
+    storage-type: efs
+    tier: shared
+spec:
+  capacity:
+    storage: 20Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: efs-sc-shared
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-0075863cfd5b77ae1::fsap-0698cf703fee51337
+    volumeAttributes:
+      provisioningMode: efs-ap
+      fileSystemId: fs-0075863cfd5b77ae1
+      accessPointId: fsap-0698cf703fee51337
+---
+# Secure EFS Persistent Volume with restricted access
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: secure-efs-pv
+  labels:
+    app: contact-api
+    storage-type: efs
+    tier: secure
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: efs-sc-secure
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-0075863cfd5b77ae1::fsap-0698cf703fee51337
+    volumeAttributes:
+      provisioningMode: efs-ap
+      fileSystemId: fs-0075863cfd5b77ae1
+      accessPointId: fsap-0698cf703fee51337

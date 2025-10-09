@@ -1,0 +1,181 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: enhanced-document-processor-service
+  labels:
+    app: enhanced-document-processor
+    component: main-application
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  selector:
+    app: enhanced-document-processor
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enhanced-analytics-service
+  labels:
+    app: enhanced-document-processor
+    component: analytics
+spec:
+  type: ClusterIP
+  ports:
+  - name: analytics
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: enhanced-document-processor
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enhanced-search-service
+  labels:
+    app: enhanced-document-processor
+    component: search
+spec:
+  type: ClusterIP
+  ports:
+  - name: search
+    port: 9200
+    targetPort: 9200
+    protocol: TCP
+  selector:
+    app: enhanced-document-processor
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: enhanced-document-processor-ingress
+  labels:
+    app: enhanced-document-processor
+    component: networking
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '3'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-1:411911107156:certificate/your-cert-arn
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=60
+spec:
+  rules:
+  - host: api.enhanced-demo-pretamane.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: enhanced-document-processor-service
+            port:
+              number: 8000
+      - path: /analytics
+        pathType: Prefix
+        backend:
+          service:
+            name: enhanced-analytics-service
+            port:
+              number: 8080
+      - path: /search
+        pathType: Prefix
+        backend:
+          service:
+            name: enhanced-search-service
+            port:
+              number: 9200
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: enhanced-document-processor-service
+            port:
+              number: 8000
+      - path: /docs
+        pathType: Prefix
+        backend:
+          service:
+            name: enhanced-document-processor-service
+            port:
+              number: 8000
+      - path: /metrics
+        pathType: Prefix
+        backend:
+          service:
+            name: enhanced-document-processor-service
+            port:
+              number: 9090
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: enhanced-document-processor-internal-ingress
+  labels:
+    app: enhanced-document-processor
+    component: internal-networking
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '3'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=60
+spec:
+  rules:
+  - host: internal.enhanced-demo-pretamane.com
+    http:
+      paths:
+      - path: /admin
+        pathType: Prefix
+        backend:
+          service:
+            name: enhanced-document-processor-service
+            port:
+              number: 8000
+      - path: /monitoring
+        pathType: Prefix
+        backend:
+          service:
+            name: enhanced-document-processor-service
+            port:
+              number: 9090
+      - path: /analytics
+        pathType: Prefix
+        backend:
+          service:
+            name: enhanced-analytics-service
+            port:
+              number: 8080
+      - path: /search
+        pathType: Prefix
+        backend:
+          service:
+            name: enhanced-search-service
+            port:
+              number: 9200
+
+
+

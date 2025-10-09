@@ -1,0 +1,51 @@
+# /complete-advanced-setup/storage/03-efs-claims.yaml
+# EFS Persistent Volume Claims
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: advanced-efs-pvc
+  labels:
+    app: contact-api
+    storage-type: efs
+    tier: advanced
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: efs-sc-advanced
+---
+# Shared PVC for multi-pod scenarios
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-efs-pvc
+  labels:
+    app: contact-api
+    storage-type: efs
+    tier: shared
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: efs-sc-shared
+---
+# Secure PVC with restricted access
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: secure-efs-pvc
+  labels:
+    app: contact-api
+    storage-type: efs
+    tier: secure
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: efs-sc-secure

@@ -92,9 +92,9 @@ Additional Information:
 """
 
         response = ses.send_email(
-            Source=os.environ.get('SES_FROM_EMAIL', 'thawzin252467@gmail.com'),
+            Source=os.environ.get('SES_FROM_EMAIL', 'noreply@example.com'),
             Destination={
-                'ToAddresses': [os.environ.get('SES_TO_EMAIL', 'thawzin252467@gmail.com')]
+                'ToAddresses': [os.environ.get('SES_TO_EMAIL', 'admin@example.com')]
             },
             Message={
                 'Subject': {'Data': f'New Contact: {name} - {service}'},

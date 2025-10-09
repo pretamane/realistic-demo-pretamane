@@ -1,0 +1,515 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enhanced-document-processor
+  labels:
+    app: enhanced-document-processor
+    component: document-processing
+    version: "2.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: enhanced-document-processor
+  template:
+    metadata:
+      labels:
+        app: enhanced-document-processor
+        component: document-processing
+        version: "2.0.0"
+    spec:
+      serviceAccountName: enhanced-app-service-account
+      initContainers:
+      - name: document-processor-init
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          echo "Initializing enhanced document processing environment..."
+          
+          # Create processing directories
+          mkdir -p /mnt/efs/uploads /mnt/efs/processed /mnt/efs/temp
+          mkdir -p /mnt/efs/analytics /mnt/efs/search-index
+          
+          # Set proper permissions
+          chmod 755 /mnt/efs/uploads /mnt/efs/processed /mnt/efs/temp
+          chmod 755 /mnt/efs/analytics /mnt/efs/search-index
+          
+          # Create sample processing configuration
+          cat > /mnt/efs/processing-config.json << 'EOF'
+          {
+            "max_file_size": 52428800,
+            "allowed_extensions": [".pdf", ".doc", ".docx", ".txt", ".json", ".csv", ".xlsx", ".pptx"],
+            "processing_timeout": 300,
+            "batch_size": 10,
+            "enable_ocr": true,
+            "enable_nlp": true,
+            "enable_analytics": true
+          }
+          EOF
+          
+          echo "Enhanced document processing environment initialized!"
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        env:
+        - name: PROCESSING_MODE
+          value: "enhanced"
+        - name: ENABLE_ANALYTICS
+          value: "true"
+        - name: ENABLE_SEARCH
+          value: "true"
+      
+      containers:
+      - name: enhanced-fastapi-app
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          echo "Starting Enhanced Document Management & Contact Intelligence API..."
+          
+          # Install enhanced dependencies
+          pip install --no-cache-dir \
+            fastapi==0.104.1 \
+            uvicorn[standard]==0.24.0 \
+            boto3==1.34.0 \
+            pydantic[email]==2.5.0 \
+            aiofiles==23.2.1 \
+            python-multipart==0.0.6 \
+            opensearch-py==2.4.0 \
+            pandas==2.1.4 \
+            numpy==1.25.2 \
+            python-docx==1.1.0 \
+            PyPDF2==3.0.1 \
+            openpyxl==3.1.2 \
+            Pillow==10.1.0 \
+            requests==2.31.0 \
+            python-jose[cryptography]==3.3.0 \
+            passlib[bcrypt]==1.7.4
+          
+          # Copy enhanced application
+          cat > /app/enhanced_app.py << 'EOF'
+          # Enhanced FastAPI Application - Document Management & Contact Intelligence System
+          from fastapi import FastAPI, Request, Response, HTTPException, UploadFile, File, Form
+          from fastapi.responses import JSONResponse, FileResponse
+          from fastapi.middleware.cors import CORSMiddleware
+          from pydantic import BaseModel, EmailStr, Field
+          from typing import Optional, List, Dict, Any
+          import boto3
+          import os
+          import time
+          import logging
+          import json
+          import uuid
+          import asyncio
+          from datetime import datetime
+          from botocore.exceptions import ClientError
+          import aiofiles
+          import hashlib
+          import mimetypes
+          from pathlib import Path
+          
+          # Configure logging
+          logging.basicConfig(level=logging.INFO)
+          logger = logging.getLogger(__name__)
+          
+          # Initialize FastAPI app
+          app = FastAPI(
+              title="Enterprise Document Management & Contact Intelligence API",
+              description="Advanced document processing system with contact intelligence and real-time search capabilities",
+              version="2.0.0",
+              docs_url="/docs",
+              redoc_url="/redoc"
+          )
+          
+          # Add CORS middleware
+          app.add_middleware(
+              CORSMiddleware,
+              allow_origins=["*"],
+              allow_credentials=True,
+              allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+              allow_headers=["Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token"],
+          )
+          
+          # Initialize AWS clients
+          region = os.environ.get('AWS_REGION', 'ap-southeast-1')
+          s3_client = boto3.client('s3', region_name=region)
+          ses = boto3.client('ses', region_name=region)
+          dynamodb = boto3.resource('dynamodb', region_name=region)
+          
+          @app.get("/")
+          def read_root():
+              return {
+                  "message": "Enterprise Document Management & Contact Intelligence API is running!",
+                  "version": "2.0.0",
+                  "features": [
+                      "Contact form processing",
+                      "Document upload and processing",
+                      "Real-time search capabilities",
+                      "Contact intelligence analytics",
+                      "Multi-format document support",
+                      "S3 integration with EFS mounting",
+                      "OpenSearch indexing",
+                      "Advanced analytics"
+                  ],
+                  "status": "enhanced_mode_active"
+              }
+          
+          @app.get("/health")
+          def health_check():
+              return {
+                  "status": "healthy",
+                  "timestamp": datetime.utcnow().isoformat() + 'Z',
+                  "version": "2.0.0",
+                  "enhanced_features": True,
+                  "document_processing": True,
+                  "contact_intelligence": True
+              }
+          
+          if __name__ == "__main__":
+              import uvicorn
+              uvicorn.run(app, host="0.0.0.0", port=8000)
+          EOF
+          
+          # Start enhanced application
+          cd /app && python enhanced_app.py
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: AWS_REGION
+          value: "ap-southeast-1"
+        - name: CONTACTS_TABLE
+          value: "realistic-demo-pretamane-contact-submissions"
+        - name: VISITORS_TABLE
+          value: "realistic-demo-pretamane-website-visitors"
+        - name: DOCUMENTS_TABLE
+          value: "realistic-demo-pretamane-documents"
+        - name: S3_DATA_BUCKET
+          value: "realistic-demo-pretamane-data"
+        - name: OPENSEARCH_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-credentials
+              key: endpoint
+        - name: OPENSEARCH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-credentials
+              key: username
+        - name: OPENSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-credentials
+              key: password
+        - name: SES_FROM_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: ses-credentials
+              key: from-email
+        - name: SES_TO_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: ses-credentials
+              key: to-email
+        - name: PROCESSING_MODE
+          value: "enhanced"
+        - name: ENABLE_ANALYTICS
+          value: "true"
+        - name: ENABLE_SEARCH
+          value: "true"
+        - name: MAX_FILE_SIZE
+          value: "52428800"
+        - name: ALLOWED_EXTENSIONS
+          value: ".pdf,.doc,.docx,.txt,.json,.csv,.xlsx,.pptx"
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        - name: app-config
+          mountPath: /app/config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      
+      - name: document-analytics-engine
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          echo "Starting Document Analytics Engine..."
+          
+          # Install analytics dependencies
+          pip install --no-cache-dir \
+            pandas==2.1.4 \
+            numpy==1.25.2 \
+            matplotlib==3.8.2 \
+            seaborn==0.13.0 \
+            scikit-learn==1.3.2 \
+            boto3==1.34.0 \
+            opensearch-py==2.4.0
+          
+          # Create analytics engine
+          cat > /app/analytics_engine.py << 'EOF'
+          import pandas as pd
+          import numpy as np
+          import json
+          import boto3
+          from datetime import datetime, timedelta
+          import logging
+          
+          logging.basicConfig(level=logging.INFO)
+          logger = logging.getLogger(__name__)
+          
+          class DocumentAnalyticsEngine:
+              def __init__(self):
+                  self.dynamodb = boto3.resource('dynamodb')
+                  self.s3 = boto3.client('s3')
+                  
+              def generate_analytics_report(self):
+                  """Generate comprehensive analytics report"""
+                  try:
+                      # Get document statistics
+                      documents_table = self.dynamodb.Table('realistic-demo-pretamane-documents')
+                      response = documents_table.scan()
+                      
+                      documents = response['Items']
+                      df = pd.DataFrame(documents)
+                      
+                      if df.empty:
+                          return {"message": "No documents found for analysis"}
+                      
+                      # Calculate analytics
+                      analytics = {
+                          "total_documents": len(df),
+                          "document_types": df['document_type'].value_counts().to_dict(),
+                          "processing_status": df['processing_status'].value_counts().to_dict(),
+                          "average_file_size": df['size'].mean(),
+                          "total_storage_used": df['size'].sum(),
+                          "upload_trends": self._calculate_upload_trends(df),
+                          "content_analysis": self._analyze_content(df),
+                          "generated_at": datetime.utcnow().isoformat()
+                      }
+                      
+                      # Save analytics to EFS
+                      with open('/mnt/efs/analytics/latest_report.json', 'w') as f:
+                          json.dump(analytics, f, indent=2)
+                      
+                      logger.info("Analytics report generated successfully")
+                      return analytics
+                      
+                  except Exception as e:
+                      logger.error(f"Error generating analytics: {str(e)}")
+                      return {"error": str(e)}
+              
+              def _calculate_upload_trends(self, df):
+                  """Calculate upload trends over time"""
+                  df['upload_date'] = pd.to_datetime(df['upload_timestamp']).dt.date
+                  daily_uploads = df.groupby('upload_date').size()
+                  return daily_uploads.to_dict()
+              
+              def _analyze_content(self, df):
+                  """Analyze document content patterns"""
+                  return {
+                      "most_common_types": df['document_type'].value_counts().head(5).to_dict(),
+                      "processing_efficiency": (df['processing_status'] == 'completed').mean(),
+                      "average_processing_time": "calculated_from_timestamps"
+                  }
+          
+          # Run analytics engine
+          engine = DocumentAnalyticsEngine()
+          
+          while True:
+              try:
+                  report = engine.generate_analytics_report()
+                  logger.info(f"Analytics report: {report}")
+                  time.sleep(300)  # Run every 5 minutes
+              except Exception as e:
+                  logger.error(f"Analytics error: {str(e)}")
+                  time.sleep(60)
+          EOF
+          
+          # Start analytics engine
+          cd /app && python analytics_engine.py
+        env:
+        - name: AWS_REGION
+          value: "ap-southeast-1"
+        - name: ANALYTICS_MODE
+          value: "enhanced"
+        - name: REPORT_INTERVAL
+          value: "300"
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+      
+      - name: search-index-manager
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          echo "Starting Search Index Manager..."
+          
+          # Install search dependencies
+          pip install --no-cache-dir \
+            opensearch-py==2.4.0 \
+            boto3==1.34.0 \
+            elasticsearch==8.11.0
+          
+          # Create search index manager
+          cat > /app/search_manager.py << 'EOF'
+          from opensearchpy import OpenSearch
+          import boto3
+          import json
+          import time
+          import logging
+          import os
+          
+          logging.basicConfig(level=logging.INFO)
+          logger = logging.getLogger(__name__)
+          
+          class SearchIndexManager:
+              def __init__(self):
+                  self.opensearch = OpenSearch(
+                      hosts=[os.environ['OPENSEARCH_ENDPOINT']],
+                      http_auth=(os.environ['OPENSEARCH_USERNAME'], os.environ['OPENSEARCH_PASSWORD']),
+                      use_ssl=True,
+                      verify_certs=True,
+                      ssl_assert_hostname=False,
+                      ssl_show_warn=False
+                  )
+                  self.dynamodb = boto3.resource('dynamodb')
+                  
+              def optimize_search_index(self):
+                  """Optimize search index for better performance"""
+                  try:
+                      index_name = 'documents'
+                      
+                      # Check index health
+                      health = self.opensearch.cluster.health(index=index_name)
+                      logger.info(f"Index health: {health}")
+                      
+                      # Optimize index
+                      self.opensearch.indices.optimize(index=index_name)
+                      logger.info("Index optimization completed")
+                      
+                      # Update index settings for better performance
+                      settings = {
+                          "index": {
+                              "refresh_interval": "30s",
+                              "number_of_replicas": 0,
+                              "max_result_window": 10000
+                          }
+                      }
+                      self.opensearch.indices.put_settings(index=index_name, body=settings)
+                      
+                      return {"status": "optimized", "health": health}
+                      
+                  except Exception as e:
+                      logger.error(f"Error optimizing index: {str(e)}")
+                      return {"error": str(e)}
+              
+              def monitor_search_performance(self):
+                  """Monitor search performance metrics"""
+                  try:
+                      stats = self.opensearch.indices.stats(index='documents')
+                      return {
+                          "total_documents": stats['indices']['documents']['total']['docs']['count'],
+                          "index_size": stats['indices']['documents']['total']['store']['size_in_bytes'],
+                          "search_queries": stats['indices']['documents']['total']['search']['query_total']
+                      }
+                  except Exception as e:
+                      logger.error(f"Error monitoring performance: {str(e)}")
+                      return {"error": str(e)}
+          
+          # Run search index manager
+          manager = SearchIndexManager()
+          
+          while True:
+              try:
+                  # Optimize index every hour
+                  optimization_result = manager.optimize_search_index()
+                  logger.info(f"Optimization result: {optimization_result}")
+                  
+                  # Monitor performance every 10 minutes
+                  performance = manager.monitor_search_performance()
+                  logger.info(f"Performance metrics: {performance}")
+                  
+                  time.sleep(600)  # Run every 10 minutes
+              except Exception as e:
+                  logger.error(f"Search manager error: {str(e)}")
+                  time.sleep(60)
+          EOF
+          
+          # Start search index manager
+          cd /app && python search_manager.py
+        env:
+        - name: OPENSEARCH_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-credentials
+              key: endpoint
+        - name: OPENSEARCH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-credentials
+              key: username
+        - name: OPENSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-credentials
+              key: password
+        - name: AWS_REGION
+          value: "ap-southeast-1"
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+      
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-pvc-advanced
+      - name: app-config
+        configMap:
+          name: enhanced-app-config
+
+
+

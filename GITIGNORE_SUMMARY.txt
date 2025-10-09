@@ -1,0 +1,130 @@
+GITIGNORE CONFIGURATION SUMMARY
+================================
+
+Updated: October 9, 2025
+
+OVERVIEW
+--------
+The .gitignore file has been configured to exclude deployment scripts and 
+markdown documentation files from being pushed to git repositories.
+
+IGNORED FILE CATEGORIES
+-----------------------
+
+1. DEPLOYMENT SCRIPTS
+   - scripts/deploy*.sh
+   - scripts/cleanup*.sh
+   - scripts/nuke*.sh
+   - scripts/monitor-costs.sh
+   - scripts/cost-protection-guardian.sh
+   - scripts/daily-cost-check.sh
+   - scripts/setup-cost-protection.sh
+   - scripts/secure-deploy.sh
+   - scripts/setup-credentials.sh
+   - scripts/setup-secure-credentials.sh
+   - scripts/*autoscaling*.sh
+   - scripts/quick-portfolio-demo.sh
+   - scripts/resource-loop-through.sh
+
+2. DOCUMENTATION FILES
+   - All *.md files (markdown)
+   - Exception: /README.md (root README is tracked)
+   - All files in docs/ directory
+   - All files in old-files-backup/ directory
+
+3. AUTO-GENERATED FILES
+   - auto-cleanup.sh
+   - cleanup.pid
+
+4. EXISTING IGNORES (unchanged)
+   - Terraform state files
+   - Environment files (.env)
+   - Credentials and secrets
+   - Log files
+   - Temporary files
+   - IDE configuration
+
+TRACKED FILES
+-------------
+The following file types WILL be tracked by git:
+
+1. ROOT README
+   - /README.md (project root only)
+
+2. KUBERNETES MANIFESTS
+   - k8s/**/*.yaml
+   - k8s/kustomization.yaml
+
+3. TERRAFORM FILES
+   - terraform/**/*.tf
+   - terraform/**/*.tfvars (if not sensitive)
+
+4. APPLICATION CODE
+   - docker/api/*.py
+   - lambda-code/*.py
+
+5. CONFIGURATION
+   - config/**/*.yaml
+   - config/**/*.env (templates only, not actual .env)
+
+VERIFICATION
+------------
+To verify files are being ignored:
+
+  git check-ignore -v <filename>
+
+Example:
+  git check-ignore -v scripts/cost-protection-guardian.sh
+
+Expected output:
+  .gitignore:64:scripts/cost-protection-guardian.sh
+
+To see what will be committed:
+  git status --short
+
+IMPORTANT NOTES
+---------------
+
+1. PREVIOUSLY TRACKED FILES
+   Files that were already tracked by git before adding gitignore rules
+   will continue to show in git status until you commit their deletion.
+   This is normal git behavior.
+
+2. NEW FILES
+   Any new files matching gitignore patterns will be automatically
+   ignored and won't appear in git status.
+
+3. ROOT README EXCEPTION
+   The root /README.md is explicitly allowed (tracked) while all other
+   *.md files are ignored.
+
+4. FORCE ADD IF NEEDED
+   If you need to add an ignored file, use:
+   git add -f <filename>
+
+RATIONALE
+---------
+
+Deployment scripts are excluded because:
+- May contain environment-specific configurations
+- Could have sensitive deployment logic
+- Are typically customized per deployment environment
+- Should not be shared in public repositories
+
+Documentation files are excluded because:
+- May contain internal notes and procedures
+- Could have sensitive information
+- Are typically environment-specific
+- Root README is kept for project overview
+
+RECOMMENDATIONS
+---------------
+
+1. Keep the root README.md for project documentation
+2. Store deployment scripts locally or in private repos
+3. Use environment variables for sensitive configurations
+4. Document deployment procedures separately
+5. Share only infrastructure code (Terraform, Kubernetes YAML)
+
+STATUS: CONFIGURED AND TESTED
+

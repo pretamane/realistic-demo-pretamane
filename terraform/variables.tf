@@ -17,3 +17,15 @@ variable "free_tier_mode" {
   type        = bool
   default     = false
 }
+
+variable "ses_from_email" {
+  description = "SES from email address"
+  type        = string
+  default     = ""
+}
+
+variable "ses_to_email" {
+  description = "SES to email address"
+  type        = string
+  default     = ""
+}

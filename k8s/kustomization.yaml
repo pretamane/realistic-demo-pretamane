@@ -1,0 +1,207 @@
+# Kustomization for Advanced Kubernetes Setup
+# Kubernetes-native configuration management
+# Replaces Ansible template-based configuration
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: advanced-k8s-setup
+  labels:
+    app: realistic-demo-pretamane
+    version: v1.0.0
+    environment: production
+
+# Resources to include (in deployment order)
+resources:
+  # 1. Security and Configuration
+  - secrets/01-serviceaccount.yaml
+  - secrets/02-aws-credentials.yaml
+  - secrets/03-storage-config.yaml
+  
+  # 2. Storage Infrastructure
+  - storage/01-efs-storage-classes.yaml
+  - storage/02-efs-persistent-volumes.yaml
+  - storage/03-efs-claims.yaml
+  
+  # 3. Application Deployments
+  - deployments/02-main-application.yaml
+  - deployments/03-rclone-mount-sidecar.yaml
+  - deployments/04-s3-sync-service.yaml
+  - deployments/05-enhanced-document-processor.yaml
+  
+  # 4. Networking
+  - networking/01-services.yaml
+  - networking/02-ingress.yaml
+  - networking/03-enhanced-services.yaml
+  
+  # 5. Auto-scaling
+  - autoscaling/unified-hpa.yaml
+  
+  # 6. Enhanced Configuration
+  - secrets/03-enhanced-secrets.yaml
+  - configmaps/02-enhanced-config.yaml
+  
+  # 6. Testing and Validation
+  - testing/01-efs-validation.yaml
+  - testing/02-s3-validation.yaml
+
+# ConfigMap generators for dynamic configuration
+configMapGenerator:
+  - name: app-config
+    literals:
+      - PROJECT_NAME=realistic-demo-pretamane
+      - ENVIRONMENT=production
+      - APP_VERSION=1.0.0
+      - LOG_LEVEL=INFO
+      - ENABLE_MONITORING=true
+      - ENABLE_ADVANCED_STORAGE=true
+    options:
+      labels:
+        app: realistic-demo-pretamane
+        component: config
+        
+  - name: deployment-config
+    files:
+      - ../config/helm-repositories.yaml
+    options:
+      labels:
+        app: realistic-demo-pretamane
+        component: deployment
+
+# Secret generators for sensitive configuration
+secretGenerator:
+  - name: deployment-secrets
+    envs:
+      - ../config/environments/production.env
+    type: Opaque
+    options:
+      labels:
+        app: realistic-demo-pretamane
+        component: secrets
+
+# Common labels applied to all resources
+commonLabels:
+  app: realistic-demo-pretamane
+  version: v1.0.0
+  managed-by: kustomize
+
+# Common annotations applied to all resources
+commonAnnotations:
+  deployment.kubernetes.io/revision: "1"
+  kubernetes.io/managed-by: kustomize
+  realistic-demo-pretamane.io/deployment-method: kubernetes-native
+
+# Namespace for all resources
+namespace: default
+
+# Name prefix for generated resources
+namePrefix: realistic-demo-
+
+# Name suffix for generated resources
+nameSuffix: -v1
+
+# Images to use (can be overridden by overlays)
+images:
+  - name: contact-api
+    newName: public.ecr.aws/realistic-demo-pretamane/contact-api
+    newTag: latest
+  - name: portfolio-demo
+    newName: public.ecr.aws/realistic-demo-pretamane/portfolio-demo
+    newTag: latest
+  - name: rclone
+    newName: rclone/rclone
+    newTag: latest
+  - name: opensearch-indexer
+    newName: opensearchproject/opensearch
+    newTag: 2.11.0
+
+# Patches for environment-specific customizations
+patches:
+  # Resource limits patch
+  - target:
+      kind: Deployment
+      labelSelector: "component=application"
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 500m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 512Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 200m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 256Mi
+
+  # Replica count patch for production
+  - target:
+      kind: Deployment
+      name: portfolio-demo
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+
+  # HPA target patch
+  - target:
+      kind: HorizontalPodAutoscaler
+    patch: |-
+      - op: replace
+        path: /spec/targetCPUUtilizationPercentage
+        value: 70
+
+# Replacements for dynamic values
+replacements:
+  # Replace EFS file system ID
+  - source:
+      kind: ConfigMap
+      name: app-config
+      fieldPath: data.EFS_FILE_SYSTEM_ID
+    targets:
+      - select:
+          kind: PersistentVolume
+        fieldPaths:
+          - spec.csi.volumeHandle
+        options:
+          delimiter: ':'
+          index: 0
+
+  # Replace S3 bucket names
+  - source:
+      kind: Secret
+      name: storage-config
+      fieldPath: data.S3_DATA_BUCKET
+    targets:
+      - select:
+          kind: Deployment
+          labelSelector: "component=s3-sync"
+        fieldPaths:
+          - spec.template.spec.containers.[name=s3-sync].env.[name=S3_BUCKET].value
+
+# Validation rules
+validators:
+  - kind: Deployment
+    version: v1
+    fieldPath: spec.template.spec.containers[0].resources.limits.memory
+    required: true
+    message: "Memory limits are required for all containers"
+    
+  - kind: Service
+    version: v1
+    fieldPath: spec.type
+    allowedValues: ["ClusterIP", "NodePort", "LoadBalancer"]
+    message: "Service type must be ClusterIP, NodePort, or LoadBalancer"
+
+# Build metadata
+buildMetadata:
+  - buildDate
+  - buildUser
+  - gitCommit
+  - gitBranch
+
+# OpenAPI schema validation
+openapi:
+  path: https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json

@@ -31,8 +31,8 @@ module "database" {
   region              = "ap-southeast-1"
   oidc_provider_url   = module.eks.oidc_provider_url
   oidc_provider_arn   = module.eks.oidc_provider_arn
-  ses_from_email      = "thawzin252467@gmail.com"
-  ses_to_email        = "thawzin252467@gmail.com"
+  ses_from_email      = var.ses_from_email
+  ses_to_email        = var.ses_to_email
 }
 
 # ---------------------------
