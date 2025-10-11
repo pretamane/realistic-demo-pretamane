@@ -74,9 +74,10 @@ scripts/quick-portfolio-demo.sh
 scripts/resource-loop-through.sh
 
 # Documentation Files
-# Note: Keep important documentation in git
-!/README.md
-!docs/security/*.md
+# Exclude all documentation MD files except main README
+docs/**/*.md
+docs/**/*.txt
+!README.md
 old-files-backup/
 
 # Auto-generated cleanup files

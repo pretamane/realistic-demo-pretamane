@@ -108,7 +108,12 @@ dynamodb = boto3.resource('dynamodb', region_name=region)
 
 # Configuration
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
-ALLOWED_EXTENSIONS = {'.pdf', '.doc', '.docx', '.txt', '.json', '.csv', '.xlsx', '.pptx'}
+ALLOWED_EXTENSIONS = {
+    # Document formats
+    '.pdf', '.doc', '.docx', '.txt', '.json', '.csv', '.xlsx', '.pptx',
+    # Image formats
+    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.tiff', '.tif'
+}
 UPLOAD_DIR = "/mnt/efs/uploads"
 PROCESSED_DIR = "/mnt/efs/processed"
 

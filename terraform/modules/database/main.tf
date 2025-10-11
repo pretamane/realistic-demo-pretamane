@@ -187,12 +187,15 @@ resource "aws_iam_policy" "app_database_policy" {
           "dynamodb:Query",
           "dynamodb:Scan",
           "dynamodb:BatchGetItem",
-          "dynamodb:BatchWriteItem"
+          "dynamodb:BatchWriteItem",
+          "dynamodb:DescribeTable"
         ]
         Resource = [
           aws_dynamodb_table.contact_submissions.arn,
           "${aws_dynamodb_table.contact_submissions.arn}/index/*",
-          aws_dynamodb_table.website_visitors.arn
+          aws_dynamodb_table.website_visitors.arn,
+          aws_dynamodb_table.documents.arn,
+          "${aws_dynamodb_table.documents.arn}/index/*"
         ]
       },
       {

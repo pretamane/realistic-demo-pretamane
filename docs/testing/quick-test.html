@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test - Click Links Below</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .link-box { background: #f0f0f0; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        a { color: #0066cc; font-size: 18px; text-decoration: none; display: block; margin: 10px 0; }
+        a:hover { text-decoration: underline; }
+        h2 { color: #333; }
+        .status { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🌐 Your API Web UI - Click to Access</h1>
+    
+    <p class="status">✅ Status: Both ALBs are LIVE and responding!</p>
+    
+    <div class="link-box">
+        <h2>🎯 NEW Deployment (Complete with Sidecars)</h2>
+        <a href="http://k8s-default-contacta-3c638c6986-1046848089.ap-southeast-1.elb.amazonaws.com/docs" target="_blank">
+            📚 Open Swagger UI (Interactive Testing)
+        </a>
+        <a href="http://k8s-default-contacta-3c638c6986-1046848089.ap-southeast-1.elb.amazonaws.com/redoc" target="_blank">
+            📖 Open ReDoc (Beautiful Documentation)
+        </a>
+        <a href="http://k8s-default-contacta-3c638c6986-1046848089.ap-southeast-1.elb.amazonaws.com/" target="_blank">
+            🏠 Open API Root
+        </a>
+    </div>
+    
+    <div class="link-box">
+        <h2>📝 OLD Deployment (Still Works)</h2>
+        <a href="http://k8s-default-contacta-9e782977f2-1805677868.ap-southeast-1.elb.amazonaws.com/docs" target="_blank">
+            📚 Open Swagger UI
+        </a>
+        <a href="http://k8s-default-contacta-9e782977f2-1805677868.ap-southeast-1.elb.amazonaws.com/" target="_blank">
+            🏠 Open API Root
+        </a>
+    </div>
+    
+    <h2>🔍 Troubleshooting</h2>
+    <ul>
+        <li>If links don't work: Copy URL and paste in browser</li>
+        <li>If you see only text: Enable JavaScript in browser</li>
+        <li>If browser says unsafe: Click "Advanced" → "Proceed"</li>
+        <li>Try incognito/private mode if issues persist</li>
+    </ul>
+    
+    <h2>✨ What to Expect</h2>
+    <p>When you click "Open Swagger UI", you should see:</p>
+    <ul>
+        <li>A beautiful interface with green/yellow/blue sections</li>
+        <li>List of all API endpoints (GET /, POST /contact, etc.)</li>
+        <li>"Try it out" buttons you can click</li>
+        <li>Interactive forms to test the API</li>
+    </ul>
+</body>
+</html>
