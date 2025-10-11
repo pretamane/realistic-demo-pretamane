@@ -30,7 +30,7 @@ spec:
         args:
         - -c
         - |
-          echo "🔄 Starting Advanced S3 Synchronization Service..."
+          echo " Starting Advanced S3 Synchronization Service..."
           
           # Create RClone config for sync (separate from mount service)
           mkdir -p /root/.config/rclone-sync
@@ -95,11 +95,11 @@ spec:
                   --low-level-retries 10 \
                   --stats-file-name-length 0; then
                   
-                  echo "$(date): ✅ $sync_type sync completed successfully"
+                  echo "$(date):  $sync_type sync completed successfully"
                   echo "$(date): $sync_type sync completed - $file_count files" >> /tmp/sync-status/service.log
                   return 0
               else
-                  echo "$(date): ❌ $sync_type sync failed"
+                  echo "$(date):  $sync_type sync failed"
                   echo "$(date): $sync_type sync failed - $file_count files" >> /tmp/sync-status/service.log
                   return 1
               fi
@@ -151,8 +151,8 @@ spec:
           }
           
           # Main sync loop
-          echo "🔄 Starting continuous sync service..."
-          echo "📋 Sync Configuration:"
+          echo " Starting continuous sync service..."
+          echo " Sync Configuration:"
           echo "  - Processed files -> S3 Archive Bucket"
           echo "  - Log files -> S3 Logs Bucket"
           echo "  - Backup files -> S3 Backup Bucket"

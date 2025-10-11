@@ -10,8 +10,8 @@ provider "aws" {
 
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/24"
-  enable_dns_support   = true  # 👈 ADD THIS
-  enable_dns_hostnames = true  # 👈 ADD THIS
+  enable_dns_support   = true  #  ADD THIS
+  enable_dns_hostnames = true  #  ADD THIS
   tags = {
     Name = "${var.project_name}-vpc"
   }
@@ -161,7 +161,7 @@ output "vpc_id" {
 }
 
 output "public_subnet_ids" {
-  value = [aws_subnet.public_a.id, aws_subnet.public_b.id] # 👈 Now returns 2 subnets
+  value = [aws_subnet.public_a.id, aws_subnet.public_b.id] #  Now returns 2 subnets
 }
 
 output "eks_node_security_group_id" {

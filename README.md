@@ -1,14 +1,20 @@
-# 🚀 Realistic Demo - Cloud-Native Portfolio Project
+# Realistic Demo - Cloud-Native Portfolio Project
 
-**Full-Stack Cloud-Native Application with Advanced Mounting Techniques**
+**Enterprise-Grade Document Management & Contact Intelligence System**
 
-A production-ready, cost-optimized contact form API deployed on AWS EKS with comprehensive monitoring, auto-scaling, and advanced storage mounting patterns. Perfect for portfolio demonstrations and learning modern DevOps practices.
+A production-ready, cloud-native application featuring **dynamic EFS provisioning**, multi-container deployments, real-time document processing, and intelligent contact management. Built with modern DevOps practices including Kubernetes, Terraform, and AWS services integration. Perfect for portfolio demonstrations and enterprise-scale learning.
 
-## 📁 **Project Structure**
+**Latest Updates:**
+- **Dynamic Storage Provisioning** - Automatic EFS access point creation per PVC
+- **Security-First Architecture** - Isolated storage tiers with proper access controls
+- **Multi-Container Applications** - Enhanced document processor with analytics and search
+- **Production-Ready Configuration** - Bug-fixed, tested, and optimized for deployment
+
+## Project Structure
 
 ```
 realistic-demo-pretamane/
-├── 📁 scripts/           # All shell scripts
+├── scripts/           # All shell scripts
 │   ├── setup-credentials.sh      # Interactive credential setup
 │   ├── secure-deploy.sh          # Secure deployment script
 │   ├── deploy-comprehensive.sh   # Full deployment
@@ -16,13 +22,13 @@ realistic-demo-pretamane/
 │   ├── nuke-aws-everything.sh    # Complete AWS cleanup
 │   ├── monitor-costs.sh          # Cost monitoring
 │   └── ... (other scripts)
-├── 📁 docs/              # All documentation
+├── docs/              # All documentation
 │   ├── README.md                 # Main documentation
 │   ├── SECURITY_GUIDE.md         # Security best practices
 │   ├── DEPLOYMENT_GUIDE.md       # Deployment instructions
 │   ├── TECH_SUPPORT_TEST_SCENARIOS.md  # Test scenarios
 │   └── ... (other docs)
-├── 📁 k8s/               # Advanced Kubernetes manifests (PRODUCTION READY)
+├── k8s/               # Advanced Kubernetes manifests (PRODUCTION READY)
 │   ├── deployments/              # Multi-container applications (329-line FastAPI)
 │   ├── networking/               # Services & ingress (dual ingress + SSL)
 │   ├── autoscaling/              # HPA configurations (multi-service scaling)
@@ -30,15 +36,15 @@ realistic-demo-pretamane/
 │   ├── secrets/                  # Security configurations (IRSA + secrets)
 │   ├── testing/                  # Validation containers (17 comprehensive tests)
 │   └── kustomization.yaml        # GitOps-ready Kustomize configuration
-├── 📁 terraform/         # Infrastructure as Code
+├── terraform/         # Infrastructure as Code
 │   ├── main.tf                   # Main Terraform config
 │   └── modules/                  # Terraform modules
-├── 📁 docker/            # Docker configurations
+├── docker/            # Docker configurations
 │   └── api/                      # FastAPI application
-└── 📁 lambda-code/       # AWS Lambda functions
+└── lambda-code/       # AWS Lambda functions
 ```
 
-## 🚀 **Quick Start**
+## **Quick Start**
 
 ### **1. Enhanced Deployment (Recommended)**
 ```bash
@@ -83,20 +89,20 @@ kubectl apply -f k8s/autoscaling/
 ./scripts/nuke-aws-everything.sh
 ```
 
-## 🔐 **Security First**
+## **Security First**
 
 This project prioritizes security with:
-- ✅ **No hardcoded credentials** in any files
-- ✅ **Modern config management** (`config/environments/production.env`)
-- ✅ **IAM Roles for Service Accounts (IRSA)**
-- ✅ **Secure deployment scripts** with validation
-- ✅ **Comprehensive security documentation**
-- ✅ **AWS cost protection system** with auto-cleanup
+- **No hardcoded credentials** in any files
+- **Modern config management** (`config/environments/production.env`)
+- **IAM Roles for Service Accounts (IRSA)**
+- **Secure deployment scripts** with validation
+- **Comprehensive security documentation**
+- **AWS cost protection system** with auto-cleanup
 
 **See [docs/security/SECURITY_CREDENTIALS_GUIDE.md](docs/security/SECURITY_CREDENTIALS_GUIDE.md) for detailed security practices.**
 **See [docs/security/AWS_COST_PROTECTION_GUIDE.md](docs/security/AWS_COST_PROTECTION_GUIDE.md) for cost protection strategies.**
 
-## 📚 **Documentation**
+## **Documentation**
 
 All documentation is organized in the `docs/` folder:
 
@@ -108,31 +114,40 @@ All documentation is organized in the `docs/` folder:
 - **[docs/analysis/](docs/analysis/)** - Project analysis and migration docs
 - **[docs/guides/](docs/guides/)** - Technical guides and setup instructions
 
-## 🎯 **Key Features**
+## **Key Features**
 
 ### **Advanced Kubernetes Patterns**
-- ✅ **Multi-Container Applications** - 329-line sophisticated FastAPI with sidecars
-- ✅ **RClone Sidecar** - Real-time S3 bucket mounting as local filesystem
-- ✅ **S3 Sync Service** - Scheduled backup and synchronization
-- ✅ **Init Containers** - Comprehensive data preparation and setup
-- ✅ **EFS Persistent Volumes** - Advanced shared file system with uid/gid
-- ✅ **Kustomize Integration** - GitOps-ready modular deployments
+- **Dynamic EFS Provisioning** - Automatic access point creation with CSI driver v2.x
+- **Multi-Container Applications** - Enhanced document processor with analytics & search
+- **Storage Isolation** - 4 StorageClasses with automatic per-PVC isolation
+- **RClone Sidecar** - Real-time S3 bucket mounting as local filesystem
+- **S3 Sync Service** - Scheduled backup and synchronization
+- **Init Containers** - Comprehensive data preparation and setup
+- **Horizontal Pod Autoscaling** - 6 HPAs with advanced scaling policies
+- **Kustomize Integration** - GitOps-ready modular deployments
+
+### **Storage Architecture** (NEW!)
+- **Dynamic Provisioning** - CSI driver auto-creates EFS access points
+- **4 Storage Tiers** - Advanced (10Gi), Shared (20Gi), Secure (5Gi), Performance
+- **Automatic Isolation** - Each PVC gets unique access point for security
+- **Permission Control** - uid/gid 1000, configurable directory permissions
+- **Auto-Cleanup** - Delete reclaim policy for automatic resource cleanup
 
 ### **AWS Integration**
-- ✅ **EKS Cluster** with managed node groups and auto-scaling
-- ✅ **DynamoDB** for contact submissions and visitor tracking
-- ✅ **SES** for email notifications
-- ✅ **CloudWatch** for comprehensive monitoring and logging
-- ✅ **EFS** for shared storage with CSI driver
-- ✅ **S3** for object storage (6 buckets with lifecycle policies)
-- ✅ **OpenSearch** for document indexing and search
-- ✅ **IAM** with IRSA for secure service access
+- **EKS Cluster** with managed node groups and auto-scaling
+- **EFS with CSI Driver** - Dynamic provisioning, automatic access points
+- **DynamoDB** for contact submissions, visitor tracking, and documents
+- **OpenSearch** for document indexing and full-text search
+- **S3** for object storage (6 buckets with lifecycle policies)
+- **SES** for email notifications
+- **CloudWatch** for comprehensive monitoring and logging
+- **IAM with IRSA** for secure service account access
 
 ### **Cost Optimization**
-- ✅ **AWS Free Tier** optimized configuration
-- ✅ **Automatic cleanup** scripts
-- ✅ **Resource monitoring** and cost alerts
-- ✅ **Efficient resource allocation**
+- **AWS Free Tier** optimized configuration
+- **Automatic cleanup** scripts
+- **Resource monitoring** and cost alerts
+- **Efficient resource allocation**
 
 ## 🛠️ **Scripts Overview**
 
@@ -156,7 +171,7 @@ All documentation is organized in the `docs/` folder:
 - `scripts/cleanup-now.sh` - Quick cleanup
 - `scripts/nuke-aws-everything.sh` - Complete AWS resource destruction
 
-## 🔧 **Development**
+## **Development**
 
 ### **Prerequisites**
 - AWS CLI configured
@@ -180,7 +195,7 @@ source config/environments/production.env
 ./scripts/deploy-enhanced.sh
 ```
 
-## 📈 **Performance Metrics**
+## **Performance Metrics**
 
 - **Startup Time**: < 2 minutes (enhanced deployment)
 - **Cost**: $0/month (AWS Free Tier optimized)
@@ -189,7 +204,7 @@ source config/environments/production.env
 - **Monitoring**: CloudWatch + Kubernetes metrics + health checks
 - **Deployment Modes**: Full, infrastructure-only, app-only, cleanup
 
-## 🤝 **Contributing**
+## **Contributing**
 
 1. Fork the repository
 2. Create a feature branch
@@ -197,11 +212,11 @@ source config/environments/production.env
 4. Test thoroughly
 5. Submit a pull request
 
-## 📄 **License**
+## **License**
 
 This project is for educational and portfolio purposes.
 
-## 🆘 **Support**
+## **Support**
 
 - Check [docs/TECH_SUPPORT_TEST_SCENARIOS.md](docs/TECH_SUPPORT_TEST_SCENARIOS.md) for troubleshooting
 - Review [docs/security/SECURITY_CREDENTIALS_GUIDE.md](docs/security/SECURITY_CREDENTIALS_GUIDE.md) for security issues
@@ -211,20 +226,104 @@ This project is for educational and portfolio purposes.
 
 ---
 
-## 🏆 **Project Evolution Highlights**
+## **Current Architecture**
+
+### **Application Components**
+```
+┌─────────────────────────────────────────────────────────┐
+│                  AWS EKS Cluster                         │
+├─────────────────────────────────────────────────────────┤
+│                                                           │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  Main Application (contact-api-advanced)         │  │
+│  │  - FastAPI application (8000)                     │  │
+│  │  - Contact form processing                        │  │
+│  │  - Document upload & management                   │  │
+│  │  - EFS storage: /mnt/efs                          │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                           │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  Enhanced Document Processor                      │  │
+│  │  ├─ FastAPI App (port 8000)                       │  │
+│  │  ├─ Analytics Engine (background)                 │  │
+│  │  └─ Search Index Manager (background)             │  │
+│  │  - Multi-container pod architecture               │  │
+│  │  - OpenSearch integration                         │  │
+│  │  - Real-time document analysis                    │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                           │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  RClone Mount Service                             │  │
+│  │  - Real-time S3 mounting (data/index/realtime)   │  │
+│  │  - VFS caching for performance                    │  │
+│  │  - Auto-remount on failure                        │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                           │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  S3 Sync Service                                  │  │
+│  │  - Scheduled sync to archive/logs/backup         │  │
+│  │  - Retention policy enforcement                   │  │
+│  │  - Automated cleanup (30-day retention)           │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                           │
+└─────────────────────────────────────────────────────────┘
+```
+
+### **Storage Architecture (Dynamic Provisioning)**
+```
+EFS File System (fs-0b3a076e9c8805489)
+    │
+    ├── Access Point 1 (auto-created) → advanced-efs-pvc (10Gi)
+    │   └── Permissions: 0755, uid/gid: 1000
+    │
+    ├── Access Point 2 (auto-created) → shared-efs-pvc (20Gi)  
+    │   └── Permissions: 0755, uid/gid: 1000
+    │
+    └── Access Point 3 (auto-created) → secure-efs-pvc (5Gi)
+        └── Permissions: 0750, uid/gid: 1000 (restricted)
+        
+Benefits:
+Automatic isolation per PVC
+No manual access point creation
+CSI driver handles everything
+Delete reclaim policy (auto-cleanup)
+```
+
+### **Kubernetes Resources**
+- **Deployments:** 4 (Main app, Enhanced processor, RClone, S3 Sync)
+- **Services:** 7 (ClusterIP + LoadBalancer endpoints)
+- **Ingresses:** 4 (Public + Internal, Basic + Enhanced)
+- **HPAs:** 6 (Multi-service auto-scaling)
+- **StorageClasses:** 4 (Dynamic provisioning enabled)
+- **PVCs:** 3 (Auto-provisioned with isolated access points)
+- **ConfigMaps:** 2 (App config + Enhanced config)
+- **Secrets:** 3 (AWS creds, OpenSearch, SES)
+
+### **Recent Bug Fixes & Improvements**
+- Fixed PVC name mismatch (efs-pvc-advanced → advanced-efs-pvc)
+- Removed conflicting StorageClass parameters
+- Migrated to dynamic EFS provisioning (security improvement)
+- Resolved EFS CSI driver v2.x compatibility issues
+- Implemented automatic storage isolation per tier
+- Backend reverted to S3 for state management
+- All configurations tested and validated
+
+---
+
+## **Project Evolution Highlights**
 
 This project has undergone significant evolution and optimization:
 
-### **✅ Recent Improvements:**
-- **🔄 Ansible Migration**: Migrated from Ansible to enhanced Bash + Kustomize approach
-- **📁 Advanced Organization**: Consolidated from 54+ files to clean modular structure
-- **🚀 Enhanced Deployment**: New `scripts/deploy-enhanced.sh` with multiple modes
+### **Recent Improvements:**
+- **Ansible Migration**: Migrated from Ansible to enhanced Bash + Kustomize approach
+- **Advanced Organization**: Consolidated from 54+ files to clean modular structure
+- **Enhanced Deployment**: New `scripts/deploy-enhanced.sh` with multiple modes
 - **⚙️ Modern Config**: Centralized configuration in `config/environments/`
-- **📚 Documentation Cleanup**: Organized 25+ docs into structured `docs/` hierarchy
-- **🔧 Kustomize Integration**: GitOps-ready with `k8s/kustomization.yaml`
+- **Documentation Cleanup**: Organized 25+ docs into structured `docs/` hierarchy
+- **Kustomize Integration**: GitOps-ready with `k8s/kustomization.yaml`
 - **🧹 File Consolidation**: Removed redundant files, kept only production-ready components
 
-### **🎯 Current State:**
+### **Current State:**
 - **Production Ready**: Advanced Kubernetes setup with industry best practices
 - **Cost Optimized**: $0/month on AWS Free Tier
 - **Fully Automated**: One-command deployment with comprehensive validation
@@ -233,4 +332,4 @@ This project has undergone significant evolution and optimization:
 
 ---
 
-**🚀 Ready to deploy your sophisticated cloud-native portfolio project!**
+**Ready to deploy your sophisticated cloud-native portfolio project!**

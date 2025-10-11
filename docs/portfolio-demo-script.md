@@ -1,9 +1,9 @@
-# 🚀 Portfolio Demo - Enterprise File Processing System
+#  Portfolio Demo - Enterprise File Processing System
 
 ## Overview
 This is a comprehensive demonstration of a real-world enterprise file processing system built on AWS EKS with advanced storage mounting techniques.
 
-## 🏗️ Architecture Components
+##  Architecture Components
 
 ### 1. **Kubernetes Infrastructure**
 - **EKS Cluster**: Managed Kubernetes on AWS
@@ -21,7 +21,7 @@ This is a comprehensive demonstration of a real-world enterprise file processing
 - **Multi-container Architecture**: Init containers, main app, sidecar containers
 - **Real-time Processing**: Document processing pipeline
 
-## 🎯 Real-World Scenarios Demonstrated
+##  Real-World Scenarios Demonstrated
 
 ### Scenario 1: Document Processing Workflow
 ```
@@ -38,7 +38,7 @@ Upload → Validate → Process → Archive → Monitor
 - **File Organization**: Structured directory hierarchy
 - **Audit Logging**: Complete activity tracking
 
-## 🧪 Demo Commands
+##  Demo Commands
 
 ### 1. Check System Status
 ```bash
@@ -70,9 +70,9 @@ curl -X POST http://localhost:8080/process/filename.pdf
 curl http://localhost:8080/logs
 ```
 
-## 📊 Key Features Showcased
+##  Key Features Showcased
 
-### ✅ **Working Components**
+###  **Working Components**
 1. **EFS Persistent Storage**: Successfully mounted and accessible
 2. **FastAPI Application**: Running with health checks
 3. **Multi-container Pod**: Init, main, and sidecar containers
@@ -81,7 +81,7 @@ curl http://localhost:8080/logs
 6. **Audit Logging**: Complete activity tracking
 7. **Auto Scaling**: Cluster scales based on demand
 
-### 🔧 **Advanced Techniques**
+###  **Advanced Techniques**
 1. **Init Containers**: Data preparation before main app starts
 2. **Sidecar Pattern**: S3 sync running alongside main application
 3. **Volume Mounting**: EFS shared across containers
@@ -109,9 +109,9 @@ curl http://localhost:8080/logs
 - **Resource Efficiency**: Optimized container resource usage
 - **High Availability**: Multi-AZ deployment
 
-## 🚀 Deployment Status
+##  Deployment Status
 
-### Current Status: ✅ OPERATIONAL
+### Current Status:  OPERATIONAL
 - **Pods**: 2/2 containers running
 - **EFS**: Successfully mounted and accessible
 - **FastAPI**: Responding to health checks
@@ -124,7 +124,7 @@ curl http://localhost:8080/logs
 - **Availability**: 99.9% uptime with health probes
 - **Scalability**: Auto-scaling enabled
 
-## 🎯 Business Value
+##  Business Value
 
 ### Cost Optimization
 - **Pay-per-use**: EKS and EFS scale with demand
@@ -154,7 +154,7 @@ curl http://localhost:8080/logs
 
 ---
 
-## 🎉 Demo Conclusion
+##  Demo Conclusion
 
 This portfolio demonstration showcases a production-ready, enterprise-grade file processing system that combines:
 

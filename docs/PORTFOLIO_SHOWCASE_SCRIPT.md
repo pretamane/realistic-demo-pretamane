@@ -1,11 +1,11 @@
-# 🚀 Portfolio Showcase Script - Enterprise File Processing System
+#  Portfolio Showcase Script - Enterprise File Processing System
 
-## 🎯 **Demo Overview**
+##  **Demo Overview**
 This script demonstrates a comprehensive enterprise-grade file processing system built on AWS EKS with advanced storage mounting, indexing, and monitoring capabilities.
 
 ---
 
-## 🏗️ **Architecture Highlights**
+##  **Architecture Highlights**
 
 ### **Core Technologies**
 - **AWS EKS**: Managed Kubernetes cluster
@@ -33,10 +33,10 @@ This script demonstrates a comprehensive enterprise-grade file processing system
 
 ### **Step 1: System Overview**
 ```bash
-echo "🚀 Welcome to the Enterprise File Processing System Demo!"
+echo " Welcome to the Enterprise File Processing System Demo!"
 echo "=================================================="
 echo ""
-echo "📊 System Architecture:"
+echo " System Architecture:"
 echo "- AWS EKS Cluster with 2 nodes"
 echo "- EFS Persistent Storage (10GB)"
 echo "- S3 Buckets for data, index, and backup"
@@ -45,7 +45,7 @@ echo "- FastAPI application with 3 containers"
 echo ""
 
 # Show system status
-echo "🔍 Current System Status:"
+echo " Current System Status:"
 kubectl get pods -l app=portfolio-demo -o wide
 echo ""
 kubectl get pv,pvc | grep efs
@@ -59,14 +59,14 @@ echo "======================="
 curl -s http://localhost:8080/health | jq .
 echo ""
 
-echo "💾 Storage Status:"
+echo " Storage Status:"
 curl -s http://localhost:8080/storage/status | jq .
 echo ""
 ```
 
 ### **Step 3: Document Upload Workflow**
 ```bash
-echo "📄 Document Upload Workflow:"
+echo " Document Upload Workflow:"
 echo "============================"
 
 # Create a sample business document
@@ -118,7 +118,7 @@ echo ""
 
 ### **Step 5: File Management**
 ```bash
-echo "📁 File Management:"
+echo " File Management:"
 echo "=================="
 echo "Available files:"
 curl -s http://localhost:8080/files | jq '.files[] | {name: .name, size: .size, modified: .modified}'
@@ -127,7 +127,7 @@ echo ""
 
 ### **Step 6: Audit Logging**
 ```bash
-echo "📋 Audit Logging:"
+echo " Audit Logging:"
 echo "================="
 echo "Recent activities:"
 curl -s http://localhost:8080/logs | jq '.logs[] | select(.file == "activity.log") | .content' | tail -3
@@ -136,7 +136,7 @@ echo ""
 
 ### **Step 7: Multi-Container Architecture Demo**
 ```bash
-echo "🐳 Multi-Container Architecture:"
+echo " Multi-Container Architecture:"
 echo "==============================="
 echo "Container Status:"
 kubectl get pods -l app=portfolio-demo -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{range .spec.containers[*]}{"  - "}{.name}{" ("}{.image}{")"}{"\n"}{end}{end}'
@@ -168,7 +168,7 @@ echo ""
 
 ### **Step 9: Monitoring and Observability**
 ```bash
-echo "📊 Monitoring and Observability:"
+echo " Monitoring and Observability:"
 echo "==============================="
 echo "Pod Resource Usage:"
 kubectl top pods -l app=portfolio-demo
@@ -222,7 +222,7 @@ echo ""
 
 ### **Step 11: Advanced Features Showcase**
 ```bash
-echo "🔧 Advanced Features Showcase:"
+echo " Advanced Features Showcase:"
 echo "============================="
 
 echo "1. EFS Persistent Storage:"
@@ -250,7 +250,7 @@ echo ""
 
 ### **Step 12: Cost Optimization Features**
 ```bash
-echo "💰 Cost Optimization Features:"
+echo " Cost Optimization Features:"
 echo "============================="
 echo "1. SPOT Instances: Using t3.small SPOT for cost savings"
 echo "2. EFS Lifecycle: Files transition to IA after 7 days"
@@ -304,7 +304,7 @@ echo ""
 
 ---
 
-## 🎯 **Demo Conclusion**
+##  **Demo Conclusion**
 
 ### **Key Takeaways**
 1. **Enterprise-Grade Architecture**: Multi-container, scalable, and resilient
@@ -339,4 +339,4 @@ echo ""
 4. **Security Hardening**: Review and update security policies
 5. **Performance Tuning**: Optimize based on usage patterns
 
-**Demo Completed Successfully! 🎉**
+**Demo Completed Successfully! **

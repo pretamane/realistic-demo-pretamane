@@ -21,15 +21,15 @@ log() {
 }
 
 log_success() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] ✅ $1${NC}"
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] ⚠️  $1${NC}"
+    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')]   $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ❌ $1${NC}"
+    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_highlight() {
@@ -167,21 +167,21 @@ cleanup_remaining_resources() {
 show_cleanup_summary() {
     log_highlight "🧹 Comprehensive Cleanup Summary:"
     echo "======================================"
-    echo "✅ Kubernetes Resources: DELETED"
-    echo "✅ Terraform Infrastructure: DELETED"
-    echo "✅ Backend Infrastructure: DELETED"
-    echo "✅ EFS File Systems: DELETED"
-    echo "✅ S3 Buckets: DELETED"
-    echo "✅ OpenSearch Domains: DELETED"
-    echo "✅ DynamoDB Tables: DELETED"
-    echo "✅ IAM Roles & Policies: DELETED"
-    echo "✅ Helm Releases: DELETED"
-    echo "✅ Advanced Storage: DELETED"
-    echo "✅ Mounting Techniques: DELETED"
-    echo "✅ Indexing Components: DELETED"
+    echo " Kubernetes Resources: DELETED"
+    echo " Terraform Infrastructure: DELETED"
+    echo " Backend Infrastructure: DELETED"
+    echo " EFS File Systems: DELETED"
+    echo " S3 Buckets: DELETED"
+    echo " OpenSearch Domains: DELETED"
+    echo " DynamoDB Tables: DELETED"
+    echo " IAM Roles & Policies: DELETED"
+    echo " Helm Releases: DELETED"
+    echo " Advanced Storage: DELETED"
+    echo " Mounting Techniques: DELETED"
+    echo " Indexing Components: DELETED"
     echo ""
-    log_success "🎉 ALL resources have been cleaned up!"
-    log "💰 Your AWS credits are safe!"
+    log_success " ALL resources have been cleaned up!"
+    log " Your AWS credits are safe!"
 }
 
 # Main cleanup function
@@ -206,9 +206,9 @@ main() {
     # Show cleanup summary
     show_cleanup_summary
     
-    log_success "🎉 COMPREHENSIVE cleanup completed successfully!"
+    log_success " COMPREHENSIVE cleanup completed successfully!"
     log "All AWS resources have been destroyed"
-    log "Your AWS credits are safe! 💰"
+    log "Your AWS credits are safe! "
 }
 
 # Trap to handle script interruption

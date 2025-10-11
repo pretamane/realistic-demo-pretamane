@@ -7,19 +7,19 @@
 
 resource "aws_efs_file_system" "main" {
   creation_token = "${var.project_name}-efs-${random_id.efs_token.hex}"
-  
+
   performance_mode = var.performance_mode
   throughput_mode  = var.throughput_mode
-  
+
   # Enable encryption at rest
   encrypted = true
   kms_key_id = var.kms_key_id
-  
+
   # Enable lifecycle management
   lifecycle_policy {
     transition_to_ia = "AFTER_7_DAYS"
   }
-  
+
   tags = {
     Name        = "${var.project_name}-efs"
     Environment = var.environment

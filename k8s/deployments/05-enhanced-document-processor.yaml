@@ -506,7 +506,7 @@ spec:
       volumes:
       - name: efs-storage
         persistentVolumeClaim:
-          claimName: efs-pvc-advanced
+          claimName: advanced-efs-pvc
       - name: app-config
         configMap:
           name: enhanced-app-config

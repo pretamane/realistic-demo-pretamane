@@ -74,7 +74,7 @@ resource "aws_eks_node_group" "main" {
     min_size     = 1
   }
 
-  capacity_type  = "SPOT" # 💰 Cost-saving!
+  capacity_type  = "SPOT" # Cost-saving!
   instance_types = ["t3.small"] # x86_64, 2 vCPU, 2GB RAM - more suitable for EKS
   ami_type = "AL2_x86_64"
 

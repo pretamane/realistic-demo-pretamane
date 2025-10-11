@@ -12,28 +12,28 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-echo -e "${PURPLE}🚀 Autoscaling Test for Portfolio Demo${NC}"
+echo -e "${PURPLE} Autoscaling Test for Portfolio Demo${NC}"
 echo -e "${PURPLE}====================================${NC}"
 echo ""
 
 # Function to check HPA status
 check_hpa_status() {
-    echo -e "${BLUE}📊 Current HPA Status:${NC}"
+    echo -e "${BLUE} Current HPA Status:${NC}"
     kubectl get hpa portfolio-demo-hpa
     echo ""
     
-    echo -e "${BLUE}📈 HPA Details:${NC}"
+    echo -e "${BLUE} HPA Details:${NC}"
     kubectl describe hpa portfolio-demo-hpa
     echo ""
 }
 
 # Function to check pod status
 check_pod_status() {
-    echo -e "${GREEN}🐳 Current Pod Status:${NC}"
+    echo -e "${GREEN} Current Pod Status:${NC}"
     kubectl get pods -l app=portfolio-demo -o wide
     echo ""
     
-    echo -e "${GREEN}📊 Pod Resource Usage:${NC}"
+    echo -e "${GREEN} Pod Resource Usage:${NC}"
     kubectl top pods -l app=portfolio-demo 2>/dev/null || echo "Metrics server not available"
     echo ""
 }
@@ -121,7 +121,7 @@ test_scale_down() {
 
 # Function to create stress test
 create_stress_test() {
-    echo -e "${PURPLE}🔥 Creating Stress Test Deployment${NC}"
+    echo -e "${PURPLE} Creating Stress Test Deployment${NC}"
     
     cat > k8s/stress-test.yaml << 'STRESS_EOF'
 apiVersion: apps/v1
@@ -185,7 +185,7 @@ cleanup_stress_test() {
 
 # Main test function
 main() {
-    echo -e "${GREEN}🎯 Starting Autoscaling Test${NC}"
+    echo -e "${GREEN} Starting Autoscaling Test${NC}"
     echo "=================================="
     echo ""
     
@@ -214,7 +214,7 @@ main() {
     echo -e "${BLUE}5. Cleanup${NC}"
     cleanup_stress_test
     
-    echo -e "${GREEN}✅ Autoscaling Test Completed!${NC}"
+    echo -e "${GREEN} Autoscaling Test Completed!${NC}"
     echo ""
     echo -e "${CYAN}Summary:${NC}"
     echo "- HPA was created and configured"
@@ -222,7 +222,7 @@ main() {
     echo "- Pod count was monitored during scaling"
     echo "- Scale down was tested after load removal"
     echo ""
-    echo -e "${PURPLE}Your autoscaling is working! 🎉${NC}"
+    echo -e "${PURPLE}Your autoscaling is working! ${NC}"
 }
 
 # Run main function

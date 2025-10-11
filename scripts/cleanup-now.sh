@@ -16,15 +16,15 @@ log() {
 }
 
 log_success() {
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] ✅ $1${NC}"
+    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️  $1${NC}"
+    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')]   $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ❌ $1${NC}"
+    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 # Function to kill scheduled cleanup
@@ -84,7 +84,7 @@ cleanup_backend() {
 
 # Function to show cost summary
 show_cost_summary() {
-    log "💰 Cost Summary:"
+    log " Cost Summary:"
     echo "=================="
     echo "Resources that were running:"
     echo "- EKS Cluster: ~$0.10/hour"
@@ -122,9 +122,9 @@ main() {
     # Show cost summary
     show_cost_summary
     
-    log_success "🎉 Cleanup completed successfully!"
+    log_success " Cleanup completed successfully!"
     log "All AWS resources have been destroyed"
-    log "Your AWS credits are safe! 💰"
+    log "Your AWS credits are safe! "
 }
 
 # Run main function

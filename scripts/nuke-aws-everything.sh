@@ -1,7 +1,7 @@
 #!/bin/bash
 # nuke-aws-everything.sh - Complete AWS Resource Destruction Script
-# ⚠️  WARNING: This will destroy ALL resources in your AWS account related to this project
-# 💰 This script will help you avoid AWS charges by cleaning up everything
+#   WARNING: This will destroy ALL resources in your AWS account related to this project
+#  This script will help you avoid AWS charges by cleaning up everything
 
 set -e
 
@@ -19,15 +19,15 @@ log() {
 }
 
 log_success() {
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] ✅ $1${NC}"
+    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️  $1${NC}"
+    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')]   $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ❌ $1${NC}"
+    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_danger() {
@@ -38,7 +38,7 @@ log_danger() {
 confirm_destruction() {
     echo -e "${RED}"
     echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-    echo "║                           ⚠️  DANGER ZONE ⚠️                                ║"
+    echo "║                             DANGER ZONE                                 ║"
     echo "╠══════════════════════════════════════════════════════════════════════════════╣"
     echo "║  This script will DESTROY ALL AWS resources for this project:               ║"
     echo "║                                                                              ║"
@@ -54,8 +54,8 @@ confirm_destruction() {
     echo "║  🗑️  Application Load Balancers                                            ║"
     echo "║  🗑️  Backup Vaults & Plans                                                 ║"
     echo "║                                                                              ║"
-    echo "║  💰 This will STOP ALL AWS CHARGES for this project                         ║"
-    echo "║  ⚠️  This action is IRREVERSIBLE                                            ║"
+    echo "║   This will STOP ALL AWS CHARGES for this project                         ║"
+    echo "║    This action is IRREVERSIBLE                                            ║"
     echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     
@@ -233,7 +233,7 @@ cleanup_aws_manual() {
 
 # Function to show cost summary
 show_cost_summary() {
-    log "💰 Cost Summary:"
+    log " Cost Summary:"
     echo "=================="
     echo "Resources that were running:"
     echo "- EKS Cluster: ~$0.10/hour"
@@ -255,46 +255,46 @@ show_cost_summary() {
 
 # Function to verify cleanup
 verify_cleanup() {
-    log "🔍 Verifying cleanup..."
+    log " Verifying cleanup..."
     
     REGION="ap-southeast-1"
     
     # Check EKS clusters
     EKS_COUNT=$(aws eks list-clusters --region $REGION --query 'clusters[?contains(@, `realistic-demo-pretamane`)]' --output text | wc -l)
     if [ $EKS_COUNT -eq 0 ]; then
-        log_success "✅ No EKS clusters found"
+        log_success " No EKS clusters found"
     else
-        log_warning "⚠️  $EKS_COUNT EKS clusters still exist"
+        log_warning "  $EKS_COUNT EKS clusters still exist"
     fi
     
     # Check EFS file systems
     EFS_COUNT=$(aws efs describe-file-systems --region $REGION --query 'FileSystems[?contains(Name, `realistic-demo-pretamane`)].FileSystemId' --output text | wc -l)
     if [ $EFS_COUNT -eq 0 ]; then
-        log_success "✅ No EFS file systems found"
+        log_success " No EFS file systems found"
     else
-        log_warning "⚠️  $EFS_COUNT EFS file systems still exist"
+        log_warning "  $EFS_COUNT EFS file systems still exist"
     fi
     
     # Check S3 buckets
     S3_COUNT=$(aws s3api list-buckets --query 'Buckets[?contains(Name, `realistic-demo-pretamane`)].Name' --output text | wc -l)
     if [ $S3_COUNT -eq 0 ]; then
-        log_success "✅ No S3 buckets found"
+        log_success " No S3 buckets found"
     else
-        log_warning "⚠️  $S3_COUNT S3 buckets still exist"
+        log_warning "  $S3_COUNT S3 buckets still exist"
     fi
     
     # Check IAM roles
     IAM_COUNT=$(aws iam list-roles --query 'Roles[?contains(RoleName, `realistic-demo-pretamane`)].RoleName' --output text | wc -l)
     if [ $IAM_COUNT -eq 0 ]; then
-        log_success "✅ No IAM roles found"
+        log_success " No IAM roles found"
     else
-        log_warning "⚠️  $IAM_COUNT IAM roles still exist"
+        log_warning "  $IAM_COUNT IAM roles still exist"
     fi
 }
 
 # Main cleanup function
 main() {
-    log_danger "🚀 Starting AWS Nuke Operation..."
+    log_danger " Starting AWS Nuke Operation..."
     
     # Confirmation
     confirm_destruction
@@ -314,9 +314,9 @@ main() {
     # Show cost summary
     show_cost_summary
     
-    log_success "🎉 AWS Nuke Operation completed!"
+    log_success " AWS Nuke Operation completed!"
     log "All AWS resources have been destroyed"
-    log "Your AWS credits are safe! 💰"
+    log "Your AWS credits are safe! "
     log ""
     log "To rebuild everything later, run:"
     log "  ./scripts/deploy-comprehensive.sh"

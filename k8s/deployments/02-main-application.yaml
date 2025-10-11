@@ -30,7 +30,7 @@ spec:
         args:
         - -c
         - |
-          echo "🚀 Starting Advanced FastAPI Application..."
+          echo " Starting Advanced FastAPI Application..."
           
           # Install comprehensive dependencies
           pip install fastapi uvicorn boto3 pydantic[email] python-multipart aiofiles opensearch-py elasticsearch
@@ -74,18 +74,18 @@ spec:
           # Initialize S3 client
           try:
               s3_client = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-southeast-1'))
-              print("✅ S3 client initialized successfully")
+              print(" S3 client initialized successfully")
           except Exception as e:
-              print(f"⚠️ S3 client initialization failed: {e}")
+              print(f" S3 client initialization failed: {e}")
               s3_client = None
           
           @app.on_event("startup")
           async def startup_event():
-              print("🚀 Advanced Enterprise Application Starting...")
-              print(f"📁 EFS Mount Point: {EFS_BASE_PATH}")
-              print(f"📁 S3 Mount Point: {S3_MOUNT_PATH}")
-              print(f"📁 Shared Data Path: {SHARED_DATA_PATH}")
-              print(f"📊 Available Storage: {get_storage_info()}")
+              print(" Advanced Enterprise Application Starting...")
+              print(f" EFS Mount Point: {EFS_BASE_PATH}")
+              print(f" S3 Mount Point: {S3_MOUNT_PATH}")
+              print(f" Shared Data Path: {SHARED_DATA_PATH}")
+              print(f" Available Storage: {get_storage_info()}")
               
               # Create directory structure if not exists
               create_directory_structure()
@@ -410,7 +410,7 @@ spec:
                   
                   if efs_stat:
                       total = efs_stat.f_frsize * efs_stat.f_blocks
-                      free = efs_stat.f_frsize * efs_stat.f_available
+                      free = efs_stat.f_frsize * efs_stat.f_bavail
                       used = total - free
                       
                       return {

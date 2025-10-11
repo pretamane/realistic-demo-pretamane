@@ -1,11 +1,11 @@
-# 🧪 Tech Support Test Scenarios - Enterprise File Processing System
+#  Tech Support Test Scenarios - Enterprise File Processing System
 
-## 📋 **Overview**
+##  **Overview**
 This document provides comprehensive test scenarios for tech support staff to validate the Enterprise File Processing System. Each scenario simulates real-world business use cases and includes step-by-step validation procedures.
 
 ---
 
-## 🎯 **Test Environment Setup**
+##  **Test Environment Setup**
 
 ### **Prerequisites Check**
 ```bash
@@ -368,7 +368,7 @@ curl -s http://localhost:8080/logs | jq '.logs[] | select(.file == "activity.log
 
 ---
 
-## 🔧 **Scenario 6: System Monitoring & Troubleshooting**
+##  **Scenario 6: System Monitoring & Troubleshooting**
 
 ### **Business Context**
 Tech support needs to monitor system health, troubleshoot issues, and ensure high availability for critical business operations.
@@ -471,9 +471,9 @@ curl -s http://localhost:8080/files | jq '.count'
 
 ---
 
-## 📊 **Expected Results Summary**
+##  **Expected Results Summary**
 
-### **✅ Success Criteria for All Scenarios:**
+### ** Success Criteria for All Scenarios:**
 
 1. **File Upload**: All documents upload successfully with proper metadata
 2. **File Processing**: All documents process without errors
@@ -484,7 +484,7 @@ curl -s http://localhost:8080/files | jq '.count'
 7. **Scalability**: System handles multiple concurrent requests
 8. **Monitoring**: All metrics and logs are accessible
 
-### **🔍 Troubleshooting Guide:**
+### ** Troubleshooting Guide:**
 
 | Issue | Symptoms | Solution |
 |-------|----------|----------|
@@ -503,7 +503,7 @@ curl -s http://localhost:8080/files | jq '.count'
 
 ---
 
-## 🎯 **Test Completion Checklist**
+##  **Test Completion Checklist**
 
 - [ ] All 7 scenarios executed successfully
 - [ ] File upload/processing working
@@ -516,5 +516,5 @@ curl -s http://localhost:8080/files | jq '.count'
 
 **Test Completed By:** _________________  
 **Date:** _________________  
-**System Status:** ✅ OPERATIONAL / ❌ ISSUES FOUND  
+**System Status:**  OPERATIONAL /  ISSUES FOUND  
 **Notes:** _________________

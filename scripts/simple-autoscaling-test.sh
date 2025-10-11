@@ -1,15 +1,15 @@
 #!/bin/bash
 # Simple Autoscaling Test
 
-echo "🚀 Simple Autoscaling Test for Portfolio Demo"
+echo " Simple Autoscaling Test for Portfolio Demo"
 echo "============================================="
 echo ""
 
-echo "📊 Current HPA Status:"
+echo " Current HPA Status:"
 kubectl get hpa portfolio-demo-hpa
 echo ""
 
-echo "🐳 Current Pod Count:"
+echo " Current Pod Count:"
 kubectl get pods -l app=portfolio-demo --no-headers | wc -l
 echo ""
 
@@ -39,15 +39,15 @@ done
 wait
 
 echo ""
-echo "📈 Final HPA Status:"
+echo " Final HPA Status:"
 kubectl get hpa portfolio-demo-hpa
 echo ""
 
-echo "🐳 Final Pod Count:"
+echo " Final Pod Count:"
 kubectl get pods -l app=portfolio-demo
 echo ""
 
-echo "✅ Autoscaling test completed!"
+echo " Autoscaling test completed!"
 echo ""
 echo "💡 Tips for better autoscaling testing:"
 echo "1. Use the full test script: ./test-autoscaling.sh"

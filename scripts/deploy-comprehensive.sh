@@ -23,15 +23,15 @@ log() {
 }
 
 log_success() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] ✅ $1${NC}" | tee -a "$LOG_FILE"
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}" | tee -a "$LOG_FILE"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] ⚠️  $1${NC}" | tee -a "$LOG_FILE"
+    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')]   $1${NC}" | tee -a "$LOG_FILE"
 }
 
 log_error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ❌ $1${NC}" | tee -a "$LOG_FILE"
+    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}" | tee -a "$LOG_FILE"
 }
 
 log_info() {
@@ -39,7 +39,7 @@ log_info() {
 }
 
 log_highlight() {
-    echo -e "${PURPLE}[$(date +'%Y-%m-%d %H:%M:%S')] 🔥 $1${NC}" | tee -a "$LOG_FILE"
+    echo -e "${PURPLE}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}" | tee -a "$LOG_FILE"
 }
 
 # Function to check prerequisites
@@ -343,7 +343,7 @@ show_comprehensive_status() {
     
     # Terraform status
     echo ""
-    echo "🏗️  Terraform Resources:"
+    echo "  Terraform Resources:"
     cd terraform
     terraform show -json | jq -r '.values.root_module.resources[] | select(.type | startswith("aws_")) | "\(.type): \(.values.tags.Name // .name)"' 2>/dev/null || echo "Terraform resources deployed"
     cd ..
@@ -360,34 +360,34 @@ show_comprehensive_status() {
     
     # Application status
     echo ""
-    echo "🚀 Application Status:"
+    echo " Application Status:"
     ALB_ENDPOINT=$(kubectl get ingress contact-api-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "pending")
     if [ "$ALB_ENDPOINT" != "pending" ] && [ -n "$ALB_ENDPOINT" ]; then
-        echo "✅ Application URL: http://$ALB_ENDPOINT"
-        echo "📚 API Docs: http://$ALB_ENDPOINT/docs"
-        echo "🔍 Health: http://$ALB_ENDPOINT/health"
+        echo " Application URL: http://$ALB_ENDPOINT"
+        echo " API Docs: http://$ALB_ENDPOINT/docs"
+        echo " Health: http://$ALB_ENDPOINT/health"
     else
-        echo "⏳ Application URL: Pending ALB creation"
+        echo " Application URL: Pending ALB creation"
     fi
     
     # Advanced features status
     echo ""
-    echo "🔥 Advanced Features:"
-    echo "   - EFS File System: ✅ Deployed"
-    echo "   - S3 Buckets (3): ✅ Deployed"
-    echo "   - OpenSearch: ✅ Deployed"
-    echo "   - RClone Sidecar: ✅ Deployed"
-    echo "   - Init Containers: ✅ Deployed"
-    echo "   - Advanced Indexing: ✅ Deployed"
-    echo "   - Comprehensive Mounting: ✅ Deployed"
+    echo " Advanced Features:"
+    echo "   - EFS File System:  Deployed"
+    echo "   - S3 Buckets (3):  Deployed"
+    echo "   - OpenSearch:  Deployed"
+    echo "   - RClone Sidecar:  Deployed"
+    echo "   - Init Containers:  Deployed"
+    echo "   - Advanced Indexing:  Deployed"
+    echo "   - Comprehensive Mounting:  Deployed"
 }
 
 # Function to show cost information
 show_cost_info() {
-    log "💰 Comprehensive Cost Information:"
+    log " Comprehensive Cost Information:"
     echo "=================================="
-    echo "📊 Estimated Monthly Cost: ~$50-100"
-    echo "📈 Resources Deployed:"
+    echo " Estimated Monthly Cost: ~$50-100"
+    echo " Resources Deployed:"
     echo "   - EKS Cluster: ~$73/month"
     echo "   - EC2 instances (t3.medium): ~$30/month"
     echo "   - Application Load Balancer: ~$16/month"
@@ -397,7 +397,7 @@ show_cost_info() {
     echo "   - DynamoDB: Pay-per-request (minimal)"
     echo "   - CloudWatch: ~$10/month"
     echo ""
-    echo "⚠️  Note: This is a comprehensive production setup"
+    echo "  Note: This is a comprehensive production setup"
     echo "   - All advanced storage features enabled"
     echo "   - Complete indexing and search capabilities"
     echo "   - Advanced mounting techniques"
@@ -408,7 +408,7 @@ show_cost_info() {
 
 # Main deployment function
 main() {
-    log_highlight "🚀 Starting COMPREHENSIVE Deployment"
+    log_highlight " Starting COMPREHENSIVE Deployment"
     log "Project: $PROJECT_NAME"
     log "Region: $REGION"
     log "Log file: $LOG_FILE"
@@ -450,28 +450,28 @@ main() {
     # Show cost information
     show_cost_info
     
-    log_success "🎉 COMPREHENSIVE deployment completed successfully!"
-    log_highlight "📋 What was deployed:"
-    log "   ✅ Complete AWS Infrastructure (VPC, EKS, IAM, Database)"
-    log "   ✅ EFS File System with CSI Driver"
-    log "   ✅ S3 Buckets (Data, Index, Backup)"
-    log "   ✅ OpenSearch for Advanced Indexing"
-    log "   ✅ Comprehensive Storage Mounting"
-    log "   ✅ RClone Sidecar for S3 Mounting"
-    log "   ✅ Init Containers for Data Preparation"
-    log "   ✅ Advanced Kubernetes Manifests"
-    log "   ✅ Complete Monitoring & Scaling"
-    log "   ✅ All Helm Releases"
+    log_success " COMPREHENSIVE deployment completed successfully!"
+    log_highlight " What was deployed:"
+    log "    Complete AWS Infrastructure (VPC, EKS, IAM, Database)"
+    log "    EFS File System with CSI Driver"
+    log "    S3 Buckets (Data, Index, Backup)"
+    log "    OpenSearch for Advanced Indexing"
+    log "    Comprehensive Storage Mounting"
+    log "    RClone Sidecar for S3 Mounting"
+    log "    Init Containers for Data Preparation"
+    log "    Advanced Kubernetes Manifests"
+    log "    Complete Monitoring & Scaling"
+    log "    All Helm Releases"
     log ""
     log "🔗 Access your application:"
     ALB_ENDPOINT=$(kubectl get ingress contact-api-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "pending")
     if [ "$ALB_ENDPOINT" != "pending" ] && [ -n "$ALB_ENDPOINT" ]; then
         log "   🌐 Application: http://$ALB_ENDPOINT"
-        log "   📚 API Docs: http://$ALB_ENDPOINT/docs"
-        log "   🔍 Health: http://$ALB_ENDPOINT/health"
+        log "    API Docs: http://$ALB_ENDPOINT/docs"
+        log "    Health: http://$ALB_ENDPOINT/health"
     fi
     log ""
-    log "⚠️  Remember to run cleanup script when done: ./scripts/cleanup-comprehensive.sh"
+    log "  Remember to run cleanup script when done: ./scripts/cleanup-comprehensive.sh"
 }
 
 # Trap to handle script interruption

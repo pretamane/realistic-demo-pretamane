@@ -2,7 +2,7 @@
 
 # 🚨 POST-AUTOSCALE NUCLEAR CLEANUP SCRIPT
 # This script will DESTROY ALL AWS resources to stop billing
-# ⚠️  WARNING: This action is IRREVERSIBLE!
+#   WARNING: This action is IRREVERSIBLE!
 
 set -e
 
@@ -53,7 +53,7 @@ echo "• VPC Resources (~$45/month each)"
 echo ""
 
 # Safety confirmation
-echo -e "${RED}⚠️  CRITICAL WARNING: This will destroy EVERYTHING! ⚠️${NC}"
+echo -e "${RED}  CRITICAL WARNING: This will destroy EVERYTHING! ${NC}"
 echo ""
 read -p "Type 'NUKE' to confirm you want to destroy all AWS resources: " confirmation
 
@@ -63,7 +63,7 @@ if [ "$confirmation" != "NUKE" ]; then
 fi
 
 echo ""
-log "🚀 Starting nuclear cleanup of AWS resources..."
+log " Starting nuclear cleanup of AWS resources..."
 echo "=============================================="
 
 # Function to check if resource exists before deletion
@@ -258,10 +258,10 @@ fi
 
 # Summary
 echo ""
-echo -e "${GREEN}🎉 NUCLEAR CLEANUP COMPLETED! 🎉${NC}"
+echo -e "${GREEN} NUCLEAR CLEANUP COMPLETED! ${NC}"
 echo "=================================="
 log_success "All AWS resources have been destroyed"
-log_success "Your AWS credits are now safe! 💰"
+log_success "Your AWS credits are now safe! "
 echo ""
 log "Resources destroyed:"
 echo "• EKS Clusters"
@@ -280,4 +280,4 @@ echo ""
 log "To rebuild everything later, run:"
 log "  ./scripts/deploy-comprehensive.sh"
 echo ""
-echo -e "${GREEN}💰 Your AWS credits are now protected! 💰${NC}"
+echo -e "${GREEN} Your AWS credits are now protected! ${NC}"

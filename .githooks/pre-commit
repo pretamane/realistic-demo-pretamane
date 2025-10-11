@@ -1,0 +1,11 @@
+#!/bin/bash
+# Pre-commit hook to prevent emojis
+# Install: ln -s ../../.emoji-check.sh .git/hooks/pre-commit
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Run emoji check
+"$ROOT_DIR/.emoji-check.sh"
+
+

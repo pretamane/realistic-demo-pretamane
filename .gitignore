@@ -74,11 +74,16 @@ scripts/quick-portfolio-demo.sh
 scripts/resource-loop-through.sh
 
 # Documentation Files
-*.md
+# Note: Keep important documentation in git
 !/README.md
-docs/
+!docs/security/*.md
 old-files-backup/
 
 # Auto-generated cleanup files
 auto-cleanup.sh
 cleanup.pid
+# Emoji Prevention
+# The following rule prevents files with emojis from being staged
+# Install the pre-commit hook: ln -s ../../.emoji-check.sh .git/hooks/pre-commit
+# Run manually: ./.emoji-check.sh
+

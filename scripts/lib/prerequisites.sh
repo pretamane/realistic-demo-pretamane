@@ -16,15 +16,15 @@ log_info() {
 }
 
 log_success() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] ✅ $1${NC}"
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] ⚠️  $1${NC}"
+    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')]   $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ❌ $1${NC}"
+    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 # Check AWS CLI installation and version
@@ -218,7 +218,7 @@ check_aws_extensions() {
 
 # Main prerequisites check function
 check_all_prerequisites() {
-    log_info "🔍 Checking all prerequisites..."
+    log_info " Checking all prerequisites..."
     echo ""
     
     local failed_checks=0
@@ -241,10 +241,10 @@ check_all_prerequisites() {
     echo ""
     
     if [ $failed_checks -eq 0 ]; then
-        log_success "🎉 All required prerequisites met!"
+        log_success "All required prerequisites met!"
         return 0
     else
-        log_error "❌ $failed_checks prerequisite check(s) failed"
+        log_error " $failed_checks prerequisite check(s) failed"
         log_info "Please install missing tools and try again"
         return 1
     fi
@@ -252,7 +252,7 @@ check_all_prerequisites() {
 
 # Enhanced prerequisites check with system info
 check_prerequisites_detailed() {
-    log_info "🔍 Running detailed prerequisites check..."
+    log_info " Running detailed prerequisites check..."
     echo ""
     
     # System information

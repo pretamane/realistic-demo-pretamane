@@ -29,14 +29,14 @@ spec:
         args:
         - -c
         - |
-          echo "🧪 Starting EFS Validation Tests..."
+          echo " Starting EFS Validation Tests..."
           
           # Test 1: Basic EFS Mount Validation
           echo "Test 1: Checking EFS mount point..."
           if [ -d "/mnt/efs" ]; then
-              echo "✅ EFS mount point exists"
+              echo " EFS mount point exists"
           else
-              echo "❌ EFS mount point missing"
+              echo " EFS mount point missing"
               exit 1
           fi
           
@@ -46,11 +46,11 @@ spec:
           mkdir -p /mnt/efs/test
           
           if echo "EFS Write Test $(date)" > "$test_file"; then
-              echo "✅ EFS write test successful"
+              echo " EFS write test successful"
               echo "   File created: $test_file"
               echo "   Content: $(cat $test_file)"
           else
-              echo "❌ EFS write test failed"
+              echo " EFS write test failed"
               exit 1
           fi
           
@@ -58,10 +58,10 @@ spec:
           echo "Test 3: Testing EFS read permissions..."
           if [ -f "$test_file" ] && [ -r "$test_file" ]; then
               content=$(cat "$test_file")
-              echo "✅ EFS read test successful"
+              echo " EFS read test successful"
               echo "   Content read: $content"
           else
-              echo "❌ EFS read test failed"
+              echo " EFS read test failed"
               exit 1
           fi
           
@@ -77,14 +77,14 @@ spec:
           
           for dir in "${required_dirs[@]}"; do
               if [ -d "$dir" ]; then
-                  echo "✅ Directory exists: $dir"
+                  echo " Directory exists: $dir"
               else
-                  echo "⚠️ Creating missing directory: $dir"
+                  echo " Creating missing directory: $dir"
                   mkdir -p "$dir"
                   if [ -d "$dir" ]; then
-                      echo "✅ Directory created successfully: $dir"
+                      echo " Directory created successfully: $dir"
                   else
-                      echo "❌ Failed to create directory: $dir"
+                      echo " Failed to create directory: $dir"
                       exit 1
                   fi
               fi
@@ -106,7 +106,7 @@ spec:
           end_time=$(date +%s.%N)
           read_time=$(echo "$end_time - $start_time" | bc -l 2>/dev/null || echo "N/A")
           
-          echo "✅ Performance test completed"
+          echo " Performance test completed"
           echo "   Write time: ${write_time}s"
           echo "   Read time: ${read_time}s"
           
@@ -119,19 +119,19 @@ spec:
           
           concurrent_files=$(ls /mnt/efs/test/concurrent-*.txt 2>/dev/null | wc -l)
           if [ "$concurrent_files" -eq 5 ]; then
-              echo "✅ Concurrent access test successful ($concurrent_files files created)"
+              echo " Concurrent access test successful ($concurrent_files files created)"
           else
-              echo "⚠️ Concurrent access test partial success ($concurrent_files/5 files created)"
+              echo " Concurrent access test partial success ($concurrent_files/5 files created)"
           fi
           
           # Test 7: Storage Space Check
           echo "Test 7: Checking available storage space..."
           df_output=$(df -h /mnt/efs 2>/dev/null)
           if [ $? -eq 0 ]; then
-              echo "✅ Storage space information:"
+              echo " Storage space information:"
               echo "$df_output"
           else
-              echo "⚠️ Could not retrieve storage space information"
+              echo " Could not retrieve storage space information"
           fi
           
           # Test 8: File Permissions Test
@@ -141,10 +141,10 @@ spec:
           chmod 644 "$perm_file"
           
           if [ -r "$perm_file" ] && [ -w "$perm_file" ]; then
-              echo "✅ File permissions test successful"
+              echo " File permissions test successful"
               echo "   File permissions: $(ls -l $perm_file)"
           else
-              echo "❌ File permissions test failed"
+              echo " File permissions test failed"
           fi
           
           # Test 9: Cleanup Test
@@ -157,26 +157,26 @@ spec:
           
           remaining_count=$(find /mnt/efs/test -name "*.txt" -o -name "*.dat" -type f | wc -l)
           if [ "$remaining_count" -eq 0 ]; then
-              echo "✅ Cleanup test successful (all test files removed)"
+              echo " Cleanup test successful (all test files removed)"
           else
-              echo "⚠️ Cleanup test partial success ($remaining_count files remaining)"
+              echo " Cleanup test partial success ($remaining_count files remaining)"
           fi
           
           # Final Summary
           echo ""
-          echo "🎉 EFS Validation Tests Completed!"
+          echo " EFS Validation Tests Completed!"
           echo "=================================="
-          echo "✅ Mount point validation: PASSED"
-          echo "✅ Write permissions: PASSED"
-          echo "✅ Read permissions: PASSED"
-          echo "✅ Directory structure: PASSED"
-          echo "✅ Performance test: PASSED"
-          echo "✅ Concurrent access: PASSED"
-          echo "✅ Storage space check: PASSED"
-          echo "✅ File permissions: PASSED"
-          echo "✅ Cleanup test: PASSED"
+          echo " Mount point validation: PASSED"
+          echo " Write permissions: PASSED"
+          echo " Read permissions: PASSED"
+          echo " Directory structure: PASSED"
+          echo " Performance test: PASSED"
+          echo " Concurrent access: PASSED"
+          echo " Storage space check: PASSED"
+          echo " File permissions: PASSED"
+          echo " Cleanup test: PASSED"
           echo "=================================="
-          echo "🚀 EFS is ready for production use!"
+          echo " EFS is ready for production use!"
           
           # Keep container running for monitoring
           echo "Validation completed. Sleeping for monitoring..."

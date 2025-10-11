@@ -27,15 +27,15 @@ log() {
 }
 
 log_success() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] ✅ $1${NC}"
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] ⚠️  $1${NC}"
+    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')]   $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ❌ $1${NC}"
+    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_info() {
@@ -43,7 +43,7 @@ log_info() {
 }
 
 log_highlight() {
-    echo -e "${PURPLE}[$(date +'%Y-%m-%d %H:%M:%S')] 🔥 $1${NC}"
+    echo -e "${PURPLE}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
 }
 
 # Global variables
@@ -53,7 +53,7 @@ VERBOSE="${ENABLE_VERBOSE_OUTPUT:-false}"
 
 # Check cluster connectivity
 check_cluster_connectivity() {
-    log "🔍 Checking cluster connectivity..."
+    log " Checking cluster connectivity..."
     
     if ! kubectl cluster-info &>/dev/null; then
         log_error "Cannot connect to Kubernetes cluster"
@@ -72,7 +72,7 @@ check_cluster_connectivity() {
 
 # Check node health
 check_node_health() {
-    log "🖥️  Checking node health..."
+    log "Checking node health..."
     
     local nodes_output=$(kubectl get nodes --no-headers 2>/dev/null)
     local total_nodes=$(echo "$nodes_output" | wc -l)
@@ -100,7 +100,7 @@ check_node_health() {
 
 # Check pod health
 check_pod_health() {
-    log "🐳 Checking pod health..."
+    log "Checking pod health..."
     
     local pods_output=$(kubectl get pods --all-namespaces --no-headers 2>/dev/null)
     local total_pods=$(echo "$pods_output" | wc -l)
@@ -234,7 +234,7 @@ check_application_endpoints() {
 
 # Check resource usage
 check_resource_usage() {
-    log "📊 Checking resource usage..."
+    log " Checking resource usage..."
     
     # Check if metrics-server is available
     if ! kubectl top nodes &>/dev/null; then
@@ -374,7 +374,7 @@ check_aws_resources() {
 generate_health_report() {
     local report_file="health-report-$(date +%Y%m%d-%H%M%S).json"
     
-    log "📋 Generating health report: $report_file"
+    log " Generating health report: $report_file"
     
     # Collect basic metrics
     local cluster_info=$(kubectl cluster-info 2>/dev/null | head -1 || echo "Not available")
@@ -459,10 +459,10 @@ run_all_health_checks() {
     
     # Summary
     if [[ $failed_checks -eq 0 ]]; then
-        log_success "🎉 All health checks passed! ($total_checks/$total_checks)"
+        log_success "All health checks passed! ($total_checks/$total_checks)"
         return 0
     else
-        log_error "❌ $failed_checks/$total_checks health checks failed"
+        log_error " $failed_checks/$total_checks health checks failed"
         return 1
     fi
 }

@@ -29,7 +29,7 @@ spec:
         args:
         - -c
         - |
-          echo "🧪 Starting S3 Services Validation Tests..."
+          echo " Starting S3 Services Validation Tests..."
           
           # Install additional tools
           apk add --no-cache curl jq bc
@@ -37,10 +37,10 @@ spec:
           # Test 1: AWS CLI Configuration
           echo "Test 1: Validating AWS CLI configuration..."
           if aws sts get-caller-identity > /dev/null 2>&1; then
-              echo "✅ AWS CLI configured successfully"
+              echo " AWS CLI configured successfully"
               aws sts get-caller-identity
           else
-              echo "❌ AWS CLI configuration failed"
+              echo " AWS CLI configuration failed"
               exit 1
           fi
           
@@ -71,12 +71,12 @@ spec:
               if [ -n "$bucket" ]; then
                   echo "Testing $name bucket: $bucket"
                   if aws s3 ls "s3://$bucket" > /dev/null 2>&1; then
-                      echo "✅ $name bucket accessible"
+                      echo " $name bucket accessible"
                   else
-                      echo "⚠️ $name bucket not accessible (may not exist yet)"
+                      echo " $name bucket not accessible (may not exist yet)"
                   fi
               else
-                  echo "⚠️ $name bucket not configured"
+                  echo " $name bucket not configured"
               fi
           done
           
@@ -99,40 +99,40 @@ spec:
               name="${mount_names[$i]}"
               
               if [ -d "$mount_point" ]; then
-                  echo "✅ $name mount point exists: $mount_point"
+                  echo " $name mount point exists: $mount_point"
                   
                   # Test write access
                   test_file="$mount_point/s3-test-$(date +%s).txt"
                   if echo "S3 Mount Test $(date)" > "$test_file" 2>/dev/null; then
-                      echo "✅ $name mount point writable"
+                      echo " $name mount point writable"
                       rm -f "$test_file" 2>/dev/null
                   else
-                      echo "⚠️ $name mount point read-only or not mounted"
+                      echo " $name mount point read-only or not mounted"
                   fi
               else
-                  echo "⚠️ $name mount point missing: $mount_point"
+                  echo " $name mount point missing: $mount_point"
               fi
           done
           
           # Test 4: RClone Configuration Test
           echo "Test 4: Testing RClone configuration..."
           if command -v rclone > /dev/null 2>&1; then
-              echo "✅ RClone available"
+              echo " RClone available"
               
               # Check if RClone configs exist
               if [ -f "/root/.config/rclone-mount/rclone.conf" ]; then
-                  echo "✅ RClone mount configuration found"
+                  echo " RClone mount configuration found"
               else
-                  echo "⚠️ RClone mount configuration missing"
+                  echo " RClone mount configuration missing"
               fi
               
               if [ -f "/root/.config/rclone-sync/rclone.conf" ]; then
-                  echo "✅ RClone sync configuration found"
+                  echo " RClone sync configuration found"
               else
-                  echo "⚠️ RClone sync configuration missing"
+                  echo " RClone sync configuration missing"
               fi
           else
-              echo "⚠️ RClone not available in this container"
+              echo " RClone not available in this container"
           fi
           
           # Test 5: S3 Performance Test
@@ -159,21 +159,21 @@ spec:
               aws s3 rm "s3://$test_bucket/$test_key" > /dev/null
               rm -f /tmp/download-test.txt
               
-              echo "✅ S3 performance test completed"
+              echo " S3 performance test completed"
               echo "   Upload time: ${upload_time}s"
               echo "   Download time: ${download_time}s"
           else
-              echo "⚠️ S3 performance test skipped (bucket not accessible)"
+              echo " S3 performance test skipped (bucket not accessible)"
           fi
           
           # Test 6: Sync Service Health Check
           echo "Test 6: Checking sync service health..."
           if [ -f "/tmp/sync-status/service.log" ]; then
-              echo "✅ Sync service log found"
+              echo " Sync service log found"
               echo "   Recent entries:"
               tail -3 /tmp/sync-status/service.log
           else
-              echo "⚠️ Sync service log not found (service may not be running)"
+              echo " Sync service log not found (service may not be running)"
           fi
           
           # Test 7: Storage Integration Test
@@ -184,18 +184,18 @@ spec:
               mkdir -p "$test_dir"
               echo "Integration test $(date)" > "$test_dir/integration-test.txt"
               
-              echo "✅ Created test file in EFS"
+              echo " Created test file in EFS"
               echo "   File: $test_dir/integration-test.txt"
               echo "   Content: $(cat $test_dir/integration-test.txt)"
               
               # Check if file appears in S3 mount (if available)
               if [ -d "/mnt/s3/data" ]; then
-                  echo "✅ S3 mount available for integration testing"
+                  echo " S3 mount available for integration testing"
               else
-                  echo "⚠️ S3 mount not available for integration testing"
+                  echo " S3 mount not available for integration testing"
               fi
           else
-              echo "⚠️ EFS not available for integration testing"
+              echo " EFS not available for integration testing"
           fi
           
           # Test 8: Environment Variables Validation
@@ -212,26 +212,26 @@ spec:
           
           for var in "${required_vars[@]}"; do
               if [ -n "${!var}" ]; then
-                  echo "✅ $var: ${!var}"
+                  echo " $var: ${!var}"
               else
-                  echo "⚠️ $var: not set"
+                  echo " $var: not set"
               fi
           done
           
           # Final Summary
           echo ""
-          echo "🎉 S3 Services Validation Tests Completed!"
+          echo " S3 Services Validation Tests Completed!"
           echo "========================================"
-          echo "✅ AWS CLI configuration: PASSED"
-          echo "✅ S3 bucket access: CHECKED"
-          echo "✅ S3 mount points: VALIDATED"
-          echo "✅ RClone configuration: CHECKED"
-          echo "✅ S3 performance: TESTED"
-          echo "✅ Sync service health: CHECKED"
-          echo "✅ Storage integration: TESTED"
-          echo "✅ Environment variables: VALIDATED"
+          echo " AWS CLI configuration: PASSED"
+          echo " S3 bucket access: CHECKED"
+          echo " S3 mount points: VALIDATED"
+          echo " RClone configuration: CHECKED"
+          echo " S3 performance: TESTED"
+          echo " Sync service health: CHECKED"
+          echo " Storage integration: TESTED"
+          echo " Environment variables: VALIDATED"
           echo "========================================"
-          echo "🚀 S3 services are ready for production use!"
+          echo " S3 services are ready for production use!"
           
           # Keep container running for monitoring
           echo "Validation completed. Sleeping for monitoring..."

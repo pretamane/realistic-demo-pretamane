@@ -16,15 +16,15 @@ log() {
 }
 
 log_success() {
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] ✅ $1${NC}"
+    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️  $1${NC}"
+    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')]   $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ❌ $1${NC}"
+    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 # Function to check running resources
@@ -32,23 +32,23 @@ check_running_resources() {
     log "Checking running AWS resources..."
     
     echo ""
-    echo "🔍 EKS Clusters:"
+    echo " EKS Clusters:"
     aws eks list-clusters --region ap-southeast-1 --query 'clusters[?contains(@, `realistic-demo-pretamane`)]' --output table 2>/dev/null || echo "No EKS clusters found"
     
     echo ""
-    echo "🔍 EC2 Instances:"
+    echo " EC2 Instances:"
     aws ec2 describe-instances --region ap-southeast-1 --filters "Name=tag:Name,Values=*realistic-demo-pretamane*" "Name=instance-state-name,Values=running" --query 'Reservations[*].Instances[*].[InstanceId,InstanceType,State.Name,Tags[?Key==`Name`].Value|[0]]' --output table 2>/dev/null || echo "No EC2 instances found"
     
     echo ""
-    echo "🔍 Load Balancers:"
+    echo " Load Balancers:"
     aws elbv2 describe-load-balancers --region ap-southeast-1 --query 'LoadBalancers[?contains(LoadBalancerName, `realistic-demo-pretamane`) || contains(LoadBalancerName, `k8s-`)].[LoadBalancerName,State.Code,Type]' --output table 2>/dev/null || echo "No load balancers found"
     
     echo ""
-    echo "🔍 DynamoDB Tables:"
+    echo " DynamoDB Tables:"
     aws dynamodb list-tables --region ap-southeast-1 --query 'TableNames[?contains(@, `realistic-demo-pretamane`)]' --output table 2>/dev/null || echo "No DynamoDB tables found"
     
     echo ""
-    echo "🔍 S3 Buckets:"
+    echo " S3 Buckets:"
     aws s3 ls --region ap-southeast-1 | grep realistic-demo-pretamane || echo "No S3 buckets found"
 }
 
@@ -57,7 +57,7 @@ estimate_costs() {
     log "Estimating current costs..."
     
     echo ""
-    echo "💰 Cost Estimation (per hour):"
+    echo " Cost Estimation (per hour):"
     echo "=============================="
     
     # Count EKS clusters
@@ -93,7 +93,7 @@ show_billing_info() {
     log "Billing Information:"
     
     echo ""
-    echo "📊 How to check your actual costs:"
+    echo " How to check your actual costs:"
     echo "=================================="
     echo "1. AWS Console → Billing & Cost Management"
     echo "2. Go to 'Cost Explorer'"
@@ -102,7 +102,7 @@ show_billing_info() {
     echo ""
     echo "🔗 Direct link: https://console.aws.amazon.com/billing/home#/costexplorer"
     echo ""
-    echo "⚠️  Note: Costs may take up to 24 hours to appear in billing"
+    echo "  Note: Costs may take up to 24 hours to appear in billing"
 }
 
 # Function to show cleanup instructions
@@ -120,24 +120,24 @@ show_cleanup_instructions() {
     echo "   - Delete DynamoDB tables"
     echo "   - Delete S3 buckets"
     echo ""
-    echo "⏰ Automatic cleanup:"
+    echo " Automatic cleanup:"
     echo "===================="
     if [ -f cleanup.pid ]; then
         CLEANUP_PID=$(cat cleanup.pid)
         if kill -0 $CLEANUP_PID 2>/dev/null; then
-            echo "✅ Automatic cleanup is scheduled (PID: $CLEANUP_PID)"
+            echo " Automatic cleanup is scheduled (PID: $CLEANUP_PID)"
             echo "   To cancel: kill $CLEANUP_PID"
         else
-            echo "❌ Automatic cleanup process not running"
+            echo " Automatic cleanup process not running"
         fi
     else
-        echo "❌ No automatic cleanup scheduled"
+        echo " No automatic cleanup scheduled"
     fi
 }
 
 # Main function
 main() {
-    log "💰 AWS Cost Monitor for realistic-demo-pretamane"
+    log " AWS Cost Monitor for realistic-demo-pretamane"
     echo "=============================================="
     
     # Check running resources

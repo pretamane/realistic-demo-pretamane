@@ -3,7 +3,7 @@
 ## **Demo Overview**
 This script will guide you through demonstrating your cloud-native application with advanced mounting techniques, optimized for AWS Free Tier.
 
-## **🎯 Demo Objectives**
+## ** Demo Objectives**
 1. Showcase full-stack cloud-native development
 2. Demonstrate advanced Kubernetes patterns
 3. Highlight cost optimization techniques
@@ -11,7 +11,7 @@ This script will guide you through demonstrating your cloud-native application w
 
 ---
 
-## **📋 Pre-Demo Setup (5 minutes)**
+## ** Pre-Demo Setup (5 minutes)**
 
 ### **1. Start the Demo**
 ```bash
@@ -26,7 +26,7 @@ tree -L 3 -I '.git|.terraform|node_modules'
 ```bash
 # Show key files
 ls -la *.md
-echo "📚 Documentation:"
+echo " Documentation:"
 echo "- DEPLOYMENT_GUIDE.md: Complete deployment instructions"
 echo "- MONITORING_AND_SCALING.md: Monitoring setup"
 echo "- DATABASE_SETUP.md: Database architecture"
@@ -35,43 +35,43 @@ echo "- MOUNTING_TECHNIQUES.md: Advanced storage patterns"
 
 ---
 
-## **🚀 Demo Part 1: Infrastructure as Code (10 minutes)**
+## ** Demo Part 1: Infrastructure as Code (10 minutes)**
 
 ### **1. Show Terraform Structure**
 ```bash
 # Show modular Terraform architecture
-echo "🏗️ Infrastructure as Code:"
+echo " Infrastructure as Code:"
 tree terraform/ -I '.terraform'
 ```
 
 ### **2. Explain Free Tier Optimization**
 ```bash
 # Show Free Tier configuration
-echo "💰 Free Tier Optimizations:"
+echo " Free Tier Optimizations:"
 grep -A 5 -B 5 "free_tier_mode" terraform/free-tier-main.tf
 ```
 
 ### **3. Deploy Infrastructure**
 ```bash
 # Deploy Free Tier optimized infrastructure
-echo "🚀 Deploying infrastructure..."
+echo " Deploying infrastructure..."
 ./deploy-free-tier.sh
 ```
 
 **Key Points to Mention:**
-- ✅ Modular Terraform architecture
-- ✅ Free Tier resource optimization
-- ✅ Automated deployment with cleanup
-- ✅ Cost monitoring and alerts
+-  Modular Terraform architecture
+-  Free Tier resource optimization
+-  Automated deployment with cleanup
+-  Cost monitoring and alerts
 
 ---
 
-## **🎯 Demo Part 2: Advanced Kubernetes Patterns (15 minutes)**
+## ** Demo Part 2: Advanced Kubernetes Patterns (15 minutes)**
 
 ### **1. Show Mounting Techniques**
 ```bash
 # Show different mounting patterns
-echo "🗂️ Mounting Techniques:"
+echo " Mounting Techniques:"
 ls -la k8s/*mount*.yaml k8s/*sidecar*.yaml k8s/*init*.yaml
 ```
 
@@ -80,21 +80,21 @@ ls -la k8s/*mount*.yaml k8s/*sidecar*.yaml k8s/*init*.yaml
 #### **RClone Sidecar Pattern**
 ```bash
 # Show RClone sidecar configuration
-echo "📁 RClone Sidecar - S3 Mounting:"
+echo " RClone Sidecar - S3 Mounting:"
 grep -A 10 -B 5 "rclone-sidecar" k8s/rclone-sidecar.yaml
 ```
 
 #### **Init Container Pattern**
 ```bash
 # Show init container configuration
-echo "🔄 Init Container - Data Preparation:"
+echo " Init Container - Data Preparation:"
 grep -A 15 -B 5 "initContainers" k8s/init-container-mount.yaml
 ```
 
 #### **EFS Persistent Volumes**
 ```bash
 # Show EFS configuration
-echo "💾 EFS Persistent Volumes:"
+echo " EFS Persistent Volumes:"
 grep -A 10 -B 5 "efs-pv" k8s/efs-pv.yaml
 ```
 
@@ -107,14 +107,14 @@ kubectl apply -f k8s/free-tier-deployment.yaml
 ```
 
 **Key Points to Mention:**
-- ✅ Sidecar containers for storage mounting
-- ✅ Init containers for data preparation
-- ✅ Persistent volumes for shared storage
-- ✅ Multi-container pod patterns
+-  Sidecar containers for storage mounting
+-  Init containers for data preparation
+-  Persistent volumes for shared storage
+-  Multi-container pod patterns
 
 ---
 
-## **🔧 Demo Part 3: Application & Monitoring (10 minutes)**
+## ** Demo Part 3: Application & Monitoring (10 minutes)**
 
 ### **1. Show Application Status**
 ```bash
@@ -127,18 +127,18 @@ echo "🌐 Services:"
 kubectl get svc
 
 # Show persistent volumes
-echo "💾 Storage:"
+echo " Storage:"
 kubectl get pv,pvc
 ```
 
 ### **2. Demonstrate Mounting**
 ```bash
 # Show mounted volumes
-echo "🗂️ Mounted Volumes:"
+echo " Mounted Volumes:"
 kubectl exec -it $(kubectl get pods -l app=contact-api -o jsonpath='{.items[0].metadata.name}') -- mount | grep -E "(s3|efs|shared)"
 
 # Show shared data
-echo "📁 Shared Data:"
+echo " Shared Data:"
 kubectl exec -it $(kubectl get pods -l app=contact-api -o jsonpath='{.items[0].metadata.name}') -- ls -la /shared-data/
 ```
 
@@ -165,23 +165,23 @@ curl -X POST http://localhost:8080/contact \
 ```
 
 **Key Points to Mention:**
-- ✅ FastAPI with Pydantic validation
-- ✅ Health checks and monitoring
-- ✅ Database integration (DynamoDB)
-- ✅ Email notifications (SES)
+-  FastAPI with Pydantic validation
+-  Health checks and monitoring
+-  Database integration (DynamoDB)
+-  Email notifications (SES)
 
 ---
 
-## **📊 Demo Part 4: Monitoring & Scaling (10 minutes)**
+## ** Demo Part 4: Monitoring & Scaling (10 minutes)**
 
 ### **1. Show Monitoring Setup**
 ```bash
 # Show HPA status
-echo "📈 Horizontal Pod Autoscaler:"
+echo " Horizontal Pod Autoscaler:"
 kubectl get hpa
 
 # Show metrics server
-echo "📊 Metrics Server:"
+echo " Metrics Server:"
 kubectl get pods -n kube-system -l app.kubernetes.io/name=metrics-server
 ```
 
@@ -192,18 +192,18 @@ echo "☁️ CloudWatch Agent:"
 kubectl get pods -n amazon-cloudwatch
 
 # Show logs
-echo "📝 Application Logs:"
+echo " Application Logs:"
 kubectl logs -l app=contact-api --tail=10
 ```
 
 ### **3. Show Cost Optimization**
 ```bash
 # Show resource usage
-echo "💰 Resource Usage:"
+echo " Resource Usage:"
 kubectl top pods
 
 # Show Free Tier compliance
-echo "🎯 Free Tier Resources:"
+echo " Free Tier Resources:"
 echo "- EKS Cluster: 1 (Free)"
 echo "- EC2 t3.micro: 1 instance (Free)"
 echo "- EFS: 1GB used (Free)"
@@ -215,53 +215,53 @@ echo "Total Monthly Cost: $0.00"
 ```
 
 **Key Points to Mention:**
-- ✅ Comprehensive monitoring with CloudWatch
-- ✅ Auto-scaling with HPA and Cluster Autoscaler
-- ✅ Cost optimization for Free Tier
-- ✅ Production-ready monitoring
+-  Comprehensive monitoring with CloudWatch
+-  Auto-scaling with HPA and Cluster Autoscaler
+-  Cost optimization for Free Tier
+-  Production-ready monitoring
 
 ---
 
-## **🎯 Demo Part 5: Portfolio Highlights (5 minutes)**
+## ** Demo Part 5: Portfolio Highlights (5 minutes)**
 
 ### **1. Technical Skills Demonstrated**
 ```bash
 echo "🛠️ Technical Skills:"
 echo "==================="
-echo "✅ Cloud Platforms: AWS (EKS, DynamoDB, SES, S3, CloudWatch)"
-echo "✅ Containerization: Docker, Kubernetes"
-echo "✅ Infrastructure as Code: Terraform (modular architecture)"
-echo "✅ Backend Development: FastAPI, Python, Pydantic"
-echo "✅ Database: DynamoDB with proper schema design"
-echo "✅ Monitoring: CloudWatch, Metrics Server, HPA"
-echo "✅ Security: IAM, IRSA, Secrets management"
-echo "✅ DevOps: CI/CD ready, automated deployment"
-echo "✅ Cost Optimization: Free Tier utilization"
-echo "✅ Advanced Patterns: Sidecar, Init containers, PV/PVC"
+echo " Cloud Platforms: AWS (EKS, DynamoDB, SES, S3, CloudWatch)"
+echo " Containerization: Docker, Kubernetes"
+echo " Infrastructure as Code: Terraform (modular architecture)"
+echo " Backend Development: FastAPI, Python, Pydantic"
+echo " Database: DynamoDB with proper schema design"
+echo " Monitoring: CloudWatch, Metrics Server, HPA"
+echo " Security: IAM, IRSA, Secrets management"
+echo " DevOps: CI/CD ready, automated deployment"
+echo " Cost Optimization: Free Tier utilization"
+echo " Advanced Patterns: Sidecar, Init containers, PV/PVC"
 ```
 
 ### **2. Business Value**
 ```bash
 echo "💼 Business Value:"
 echo "=================="
-echo "✅ Cost-Effective: $0/month on Free Tier"
-echo "✅ Scalable: Auto-scaling with HPA and Cluster Autoscaler"
-echo "✅ Reliable: Health checks, monitoring, error handling"
-echo "✅ Secure: IAM roles, encrypted storage, least privilege"
-echo "✅ Maintainable: Infrastructure as Code, documentation"
-echo "✅ Production-Ready: Monitoring, logging, alerting"
+echo " Cost-Effective: $0/month on Free Tier"
+echo " Scalable: Auto-scaling with HPA and Cluster Autoscaler"
+echo " Reliable: Health checks, monitoring, error handling"
+echo " Secure: IAM roles, encrypted storage, least privilege"
+echo " Maintainable: Infrastructure as Code, documentation"
+echo " Production-Ready: Monitoring, logging, alerting"
 ```
 
 ### **3. Portfolio Differentiation**
 ```bash
 echo "🌟 Portfolio Differentiation:"
 echo "============================="
-echo "✅ Advanced Kubernetes Patterns: Sidecar, Init containers"
-echo "✅ Multiple Storage Solutions: EFS, S3 mounting, EmptyDir"
-echo "✅ Cost Optimization: Free Tier compliance"
-echo "✅ Real-world Architecture: Production-ready setup"
-echo "✅ Comprehensive Documentation: 4 detailed guides"
-echo "✅ Automated Operations: Deployment and cleanup scripts"
+echo " Advanced Kubernetes Patterns: Sidecar, Init containers"
+echo " Multiple Storage Solutions: EFS, S3 mounting, EmptyDir"
+echo " Cost Optimization: Free Tier compliance"
+echo " Real-world Architecture: Production-ready setup"
+echo " Comprehensive Documentation: 4 detailed guides"
+echo " Automated Operations: Deployment and cleanup scripts"
 ```
 
 ---
@@ -279,7 +279,7 @@ echo "./cleanup-free-tier.sh"
 
 ### **2. Show Cost Monitoring**
 ```bash
-echo "💰 Cost Monitoring:"
+echo " Cost Monitoring:"
 echo "==================="
 echo "Real-time cost tracking with CloudWatch alarms"
 echo "Free Tier compliance monitoring"
@@ -310,7 +310,7 @@ echo "Automatic resource cleanup"
 
 ---
 
-## **📝 Demo Checklist**
+## ** Demo Checklist**
 
 ### **Pre-Demo**
 - [ ] AWS credentials configured
@@ -334,7 +334,7 @@ echo "Automatic resource cleanup"
 
 ---
 
-## **🎯 Key Messages to Convey**
+## ** Key Messages to Convey**
 
 1. **Technical Excellence**: Advanced Kubernetes patterns and AWS integration
 2. **Cost Consciousness**: Free Tier optimization and cost monitoring

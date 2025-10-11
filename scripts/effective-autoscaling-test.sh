@@ -1,11 +1,11 @@
 #!/bin/bash
 # Effective Autoscaling Test
 
-echo "🚀 Effective Autoscaling Test for Portfolio Demo"
+echo " Effective Autoscaling Test for Portfolio Demo"
 echo "==============================================="
 echo ""
 
-echo "📊 Current Status:"
+echo " Current Status:"
 kubectl get hpa portfolio-demo-hpa
 echo ""
 kubectl top pods -l app=portfolio-demo
@@ -65,10 +65,10 @@ kubectl apply -f k8s/cpu-stress-test.yaml
 echo "CPU stress test deployment created"
 echo ""
 
-echo "⏳ Waiting for stress test to start..."
+echo " Waiting for stress test to start..."
 kubectl wait --for=condition=Ready pod -l app=cpu-stress-test --timeout=60s
 
-echo "📈 Monitoring autoscaling for 2 minutes..."
+echo " Monitoring autoscaling for 2 minutes..."
 echo "Watch for pod count changes..."
 
 for i in {1..24}; do
@@ -94,13 +94,13 @@ kubectl delete -f k8s/cpu-stress-test.yaml
 rm -f k8s/cpu-stress-test.yaml
 
 echo ""
-echo "📊 Final Status:"
+echo " Final Status:"
 kubectl get hpa portfolio-demo-hpa
 echo ""
 kubectl get pods -l app=portfolio-demo
 echo ""
 
-echo "✅ Autoscaling test completed!"
+echo " Autoscaling test completed!"
 echo ""
 echo "💡 If you didn't see scaling, try:"
 echo "1. Lower the CPU target: kubectl patch hpa portfolio-demo-hpa -p '{\"spec\":{\"metrics\":[{\"type\":\"Resource\",\"resource\":{\"name\":\"cpu\",\"target\":{\"type\":\"Utilization\",\"averageUtilization\":20}}}]}}'"

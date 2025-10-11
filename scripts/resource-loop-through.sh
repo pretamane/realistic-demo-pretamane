@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🔍 AWS Resource Deep Probe Script
+#  AWS Resource Deep Probe Script
 # Comprehensive inspection of ALL AWS services across ALL regions
 # Prioritizes high-cost services that can spike charges if left undetected
 
@@ -21,15 +21,15 @@ log() {
 }
 
 log_success() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] ✅ $1${NC}"
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] ⚠️  $1${NC}"
+    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')]   $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ❌ $1${NC}"
+    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')]  $1${NC}"
 }
 
 log_critical() {
@@ -64,7 +64,7 @@ HIGH_COST_SERVICES=(
 # Function to check EC2 instances
 check_ec2_instances() {
     local region=$1
-    log "🔍 Checking EC2 instances in $region..."
+    log " Checking EC2 instances in $region..."
     
     local instances=$(aws ec2 describe-instances \
         --region $region \
@@ -75,12 +75,12 @@ check_ec2_instances() {
         log_critical "🚨 ACTIVE EC2 INSTANCES FOUND in $region:"
         echo "$instances" | while read -r instance_id state instance_type name; do
             if [ -n "$instance_id" ] && [ "$instance_id" != "None" ]; then
-                log_critical "  💰 $instance_id | $state | $instance_type | $name"
+                log_critical "   $instance_id | $state | $instance_type | $name"
             fi
         done
         return 1
     else
-        log_success "✅ No active EC2 instances in $region"
+        log_success " No active EC2 instances in $region"
         return 0
     fi
 }
@@ -88,7 +88,7 @@ check_ec2_instances() {
 # Function to check EKS clusters
 check_eks_clusters() {
     local region=$1
-    log "🔍 Checking EKS clusters in $region..."
+    log " Checking EKS clusters in $region..."
     
     local clusters=$(aws eks list-clusters --region $region --query 'clusters[]' --output text 2>/dev/null || echo "")
     
@@ -96,12 +96,12 @@ check_eks_clusters() {
         log_critical "🚨 ACTIVE EKS CLUSTERS FOUND in $region:"
         echo "$clusters" | while read -r cluster; do
             if [ -n "$cluster" ] && [ "$cluster" != "None" ]; then
-                log_critical "  💰 $cluster"
+                log_critical "   $cluster"
             fi
         done
         return 1
     else
-        log_success "✅ No EKS clusters in $region"
+        log_success " No EKS clusters in $region"
         return 0
     fi
 }
@@ -109,7 +109,7 @@ check_eks_clusters() {
 # Function to check RDS instances
 check_rds_instances() {
     local region=$1
-    log "🔍 Checking RDS instances in $region..."
+    log " Checking RDS instances in $region..."
     
     local instances=$(aws rds describe-db-instances --region $region --query 'DBInstances[?DBInstanceStatus!=`deleted`].[DBInstanceIdentifier,DBInstanceStatus,DBInstanceClass,Engine]' --output text 2>/dev/null || echo "")
     
@@ -117,12 +117,12 @@ check_rds_instances() {
         log_critical "🚨 ACTIVE RDS INSTANCES FOUND in $region:"
         echo "$instances" | while read -r instance_id status instance_class engine; do
             if [ -n "$instance_id" ] && [ "$instance_id" != "None" ]; then
-                log_critical "  💰 $instance_id | $status | $instance_class | $engine"
+                log_critical "   $instance_id | $status | $instance_class | $engine"
             fi
         done
         return 1
     else
-        log_success "✅ No active RDS instances in $region"
+        log_success " No active RDS instances in $region"
         return 0
     fi
 }
@@ -130,7 +130,7 @@ check_rds_instances() {
 # Function to check OpenSearch domains
 check_opensearch_domains() {
     local region=$1
-    log "🔍 Checking OpenSearch domains in $region..."
+    log " Checking OpenSearch domains in $region..."
     
     local domains=$(aws opensearch list-domain-names --region $region --query 'DomainNames[].DomainName' --output text 2>/dev/null || echo "")
     
@@ -138,12 +138,12 @@ check_opensearch_domains() {
         log_critical "🚨 ACTIVE OPENSEARCH DOMAINS FOUND in $region:"
         echo "$domains" | while read -r domain; do
             if [ -n "$domain" ] && [ "$domain" != "None" ]; then
-                log_critical "  💰 $domain"
+                log_critical "   $domain"
             fi
         done
         return 1
     else
-        log_success "✅ No OpenSearch domains in $region"
+        log_success " No OpenSearch domains in $region"
         return 0
     fi
 }
@@ -151,12 +151,12 @@ check_opensearch_domains() {
 # Function to check Lambda functions
 check_lambda_functions() {
     local region=$1
-    log "🔍 Checking Lambda functions in $region..."
+    log " Checking Lambda functions in $region..."
     
     local functions=$(aws lambda list-functions --region $region --query 'Functions[].FunctionName' --output text 2>/dev/null || echo "")
     
     if [ -n "$functions" ] && [ "$functions" != "None" ]; then
-        log_warning "⚠️  Lambda functions found in $region:"
+        log_warning "  Lambda functions found in $region:"
         echo "$functions" | while read -r function; do
             if [ -n "$function" ] && [ "$function" != "None" ]; then
                 log_warning "  📦 $function"
@@ -164,7 +164,7 @@ check_lambda_functions() {
         done
         return 1
     else
-        log_success "✅ No Lambda functions in $region"
+        log_success " No Lambda functions in $region"
         return 0
     fi
 }
@@ -172,7 +172,7 @@ check_lambda_functions() {
 # Function to check EFS file systems
 check_efs_filesystems() {
     local region=$1
-    log "🔍 Checking EFS file systems in $region..."
+    log " Checking EFS file systems in $region..."
     
     local filesystems=$(aws efs describe-file-systems --region $region --query 'FileSystems[?LifeCycleState==`available`].[FileSystemId,Name,LifeCycleState]' --output text 2>/dev/null || echo "")
     
@@ -180,12 +180,12 @@ check_efs_filesystems() {
         log_critical "🚨 ACTIVE EFS FILE SYSTEMS FOUND in $region:"
         echo "$filesystems" | while read -r fs_id name state; do
             if [ -n "$fs_id" ] && [ "$fs_id" != "None" ]; then
-                log_critical "  💰 $fs_id | $name | $state"
+                log_critical "   $fs_id | $name | $state"
             fi
         done
         return 1
     else
-        log_success "✅ No active EFS file systems in $region"
+        log_success " No active EFS file systems in $region"
         return 0
     fi
 }
@@ -193,12 +193,12 @@ check_efs_filesystems() {
 # Function to check S3 buckets
 check_s3_buckets() {
     local region=$1
-    log "🔍 Checking S3 buckets in $region..."
+    log " Checking S3 buckets in $region..."
     
     local buckets=$(aws s3api list-buckets --region $region --query 'Buckets[].Name' --output text 2>/dev/null || echo "")
     
     if [ -n "$buckets" ] && [ "$buckets" != "None" ]; then
-        log_warning "⚠️  S3 buckets found in $region:"
+        log_warning "  S3 buckets found in $region:"
         echo "$buckets" | while read -r bucket; do
             if [ -n "$bucket" ] && [ "$bucket" != "None" ]; then
                 # Check bucket size
@@ -212,7 +212,7 @@ check_s3_buckets() {
         done
         return 1
     else
-        log_success "✅ No S3 buckets in $region"
+        log_success " No S3 buckets in $region"
         return 0
     fi
 }
@@ -220,12 +220,12 @@ check_s3_buckets() {
 # Function to check DynamoDB tables
 check_dynamodb_tables() {
     local region=$1
-    log "🔍 Checking DynamoDB tables in $region..."
+    log " Checking DynamoDB tables in $region..."
     
     local tables=$(aws dynamodb list-tables --region $region --query 'TableNames[]' --output text 2>/dev/null || echo "")
     
     if [ -n "$tables" ] && [ "$tables" != "None" ]; then
-        log_warning "⚠️  DynamoDB tables found in $region:"
+        log_warning "  DynamoDB tables found in $region:"
         echo "$tables" | while read -r table; do
             if [ -n "$table" ] && [ "$table" != "None" ]; then
                 log_warning "  📦 $table"
@@ -233,7 +233,7 @@ check_dynamodb_tables() {
         done
         return 1
     else
-        log_success "✅ No DynamoDB tables in $region"
+        log_success " No DynamoDB tables in $region"
         return 0
     fi
 }
@@ -241,7 +241,7 @@ check_dynamodb_tables() {
 # Function to check Load Balancers
 check_load_balancers() {
     local region=$1
-    log "🔍 Checking Load Balancers in $region..."
+    log " Checking Load Balancers in $region..."
     
     # Application Load Balancers
     local albs=$(aws elbv2 describe-load-balancers --region $region --query 'LoadBalancers[?State.Code==`active`].[LoadBalancerName,Type,State.Code]' --output text 2>/dev/null || echo "")
@@ -255,7 +255,7 @@ check_load_balancers() {
         log_critical "🚨 ACTIVE APPLICATION LOAD BALANCERS FOUND in $region:"
         echo "$albs" | while read -r name type state; do
             if [ -n "$name" ] && [ "$name" != "None" ]; then
-                log_critical "  💰 $name | $type | $state"
+                log_critical "   $name | $type | $state"
             fi
         done
         found_any=true
@@ -265,14 +265,14 @@ check_load_balancers() {
         log_critical "🚨 ACTIVE CLASSIC LOAD BALANCERS FOUND in $region:"
         echo "$clbs" | while read -r name state; do
             if [ -n "$name" ] && [ "$name" != "None" ]; then
-                log_critical "  💰 $name | $state"
+                log_critical "   $name | $state"
             fi
         done
         found_any=true
     fi
     
     if [ "$found_any" = false ]; then
-        log_success "✅ No active Load Balancers in $region"
+        log_success " No active Load Balancers in $region"
         return 0
     else
         return 1
@@ -282,7 +282,7 @@ check_load_balancers() {
 # Function to check NAT Gateways
 check_nat_gateways() {
     local region=$1
-    log "🔍 Checking NAT Gateways in $region..."
+    log " Checking NAT Gateways in $region..."
     
     local nat_gateways=$(aws ec2 describe-nat-gateways --region $region --query 'NatGateways[?State==`available`].[NatGatewayId,State]' --output text 2>/dev/null || echo "")
     
@@ -290,12 +290,12 @@ check_nat_gateways() {
         log_critical "🚨 ACTIVE NAT GATEWAYS FOUND in $region:"
         echo "$nat_gateways" | while read -r nat_id state; do
             if [ -n "$nat_id" ] && [ "$nat_id" != "None" ]; then
-                log_critical "  💰 $nat_id | $state"
+                log_critical "   $nat_id | $state"
             fi
         done
         return 1
     else
-        log_success "✅ No active NAT Gateways in $region"
+        log_success " No active NAT Gateways in $region"
         return 0
     fi
 }
@@ -303,7 +303,7 @@ check_nat_gateways() {
 # Function to check Redshift clusters
 check_redshift_clusters() {
     local region=$1
-    log "🔍 Checking Redshift clusters in $region..."
+    log " Checking Redshift clusters in $region..."
     
     local clusters=$(aws redshift describe-clusters --region $region --query 'Clusters[?ClusterStatus!=`deleted`].[ClusterIdentifier,ClusterStatus,NodeType]' --output text 2>/dev/null || echo "")
     
@@ -311,12 +311,12 @@ check_redshift_clusters() {
         log_critical "🚨 ACTIVE REDSHIFT CLUSTERS FOUND in $region:"
         echo "$clusters" | while read -r cluster_id status node_type; do
             if [ -n "$cluster_id" ] && [ "$cluster_id" != "None" ]; then
-                log_critical "  💰 $cluster_id | $status | $node_type"
+                log_critical "   $cluster_id | $status | $node_type"
             fi
         done
         return 1
     else
-        log_success "✅ No active Redshift clusters in $region"
+        log_success " No active Redshift clusters in $region"
         return 0
     fi
 }
@@ -324,7 +324,7 @@ check_redshift_clusters() {
 # Function to check ElastiCache clusters
 check_elasticache_clusters() {
     local region=$1
-    log "🔍 Checking ElastiCache clusters in $region..."
+    log " Checking ElastiCache clusters in $region..."
     
     local clusters=$(aws elasticache describe-cache-clusters --region $region --query 'CacheClusters[?CacheClusterStatus!=`deleted`].[CacheClusterId,CacheClusterStatus,CacheNodeType]' --output text 2>/dev/null || echo "")
     
@@ -332,12 +332,12 @@ check_elasticache_clusters() {
         log_critical "🚨 ACTIVE ELASTICACHE CLUSTERS FOUND in $region:"
         echo "$clusters" | while read -r cluster_id status node_type; do
             if [ -n "$cluster_id" ] && [ "$cluster_id" != "None" ]; then
-                log_critical "  💰 $cluster_id | $status | $node_type"
+                log_critical "   $cluster_id | $status | $node_type"
             fi
         done
         return 1
     else
-        log_success "✅ No active ElastiCache clusters in $region"
+        log_success " No active ElastiCache clusters in $region"
         return 0
     fi
 }
@@ -345,7 +345,7 @@ check_elasticache_clusters() {
 # Function to check SageMaker resources
 check_sagemaker_resources() {
     local region=$1
-    log "🔍 Checking SageMaker resources in $region..."
+    log " Checking SageMaker resources in $region..."
     
     # Check SageMaker endpoints
     local endpoints=$(aws sagemaker list-endpoints --region $region --query 'Endpoints[?EndpointStatus!=`Deleting`].[EndpointName,EndpointStatus]' --output text 2>/dev/null || echo "")
@@ -359,7 +359,7 @@ check_sagemaker_resources() {
         log_critical "🚨 ACTIVE SAGEMAKER ENDPOINTS FOUND in $region:"
         echo "$endpoints" | while read -r name status; do
             if [ -n "$name" ] && [ "$name" != "None" ]; then
-                log_critical "  💰 $name | $status"
+                log_critical "   $name | $status"
             fi
         done
         found_any=true
@@ -369,14 +369,14 @@ check_sagemaker_resources() {
         log_critical "🚨 ACTIVE SAGEMAKER NOTEBOOKS FOUND in $region:"
         echo "$notebooks" | while read -r name status; do
             if [ -n "$name" ] && [ "$name" != "None" ]; then
-                log_critical "  💰 $name | $status"
+                log_critical "   $name | $status"
             fi
         done
         found_any=true
     fi
     
     if [ "$found_any" = false ]; then
-        log_success "✅ No active SageMaker resources in $region"
+        log_success " No active SageMaker resources in $region"
         return 0
     else
         return 1
@@ -386,7 +386,7 @@ check_sagemaker_resources() {
 # Function to check ECS services and Fargate tasks
 check_ecs_services() {
     local region=$1
-    log "🔍 Checking ECS services and Fargate tasks in $region..."
+    log " Checking ECS services and Fargate tasks in $region..."
     
     local clusters=$(aws ecs list-clusters --region $region --query 'clusterArns[]' --output text 2>/dev/null || echo "")
     local found_any=false
@@ -396,7 +396,7 @@ check_ecs_services() {
         echo "$clusters" | while read -r cluster_arn; do
             if [ -n "$cluster_arn" ] && [ "$cluster_arn" != "None" ]; then
                 local cluster_name=$(echo $cluster_arn | cut -d'/' -f2)
-                log_critical "  💰 ECS Cluster: $cluster_name"
+                log_critical "   ECS Cluster: $cluster_name"
                 
                 # Check services in this cluster
                 local services=$(aws ecs list-services --region $region --cluster $cluster_name --query 'serviceArns[]' --output text 2>/dev/null || echo "")
@@ -420,7 +420,7 @@ check_ecs_services() {
         log_critical "🚨 STANDALONE FARGATE TASKS FOUND in $region:"
         echo "$fargate_tasks" | while read -r task_arn; do
             if [ -n "$task_arn" ] && [ "$task_arn" != "None" ]; then
-                log_critical "  💰 Fargate Task: $task_arn"
+                log_critical "   Fargate Task: $task_arn"
                 # Get task details
                 local task_details=$(aws ecs describe-tasks --region $region --tasks $task_arn --query 'tasks[0].{LastStatus:lastStatus,DesiredStatus:desiredStatus,PlatformVersion:platformVersion}' --output table 2>/dev/null || echo "")
                 if [ -n "$task_details" ]; then
@@ -432,7 +432,7 @@ check_ecs_services() {
     fi
     
     if [ "$found_any" = false ]; then
-        log_success "✅ No ECS clusters or Fargate tasks in $region"
+        log_success " No ECS clusters or Fargate tasks in $region"
         return 0
     else
         return 1
@@ -441,7 +441,7 @@ check_ecs_services() {
 
 # Function to check CloudFront distributions
 check_cloudfront_distributions() {
-    log "🔍 Checking CloudFront distributions (Global)..."
+    log " Checking CloudFront distributions (Global)..."
     
     local distributions=$(aws cloudfront list-distributions --query 'DistributionList.Items[?Status==`Deployed`].[Id,DomainName,Status]' --output text 2>/dev/null || echo "")
     
@@ -449,24 +449,24 @@ check_cloudfront_distributions() {
         log_critical "🚨 ACTIVE CLOUDFRONT DISTRIBUTIONS FOUND:"
         echo "$distributions" | while read -r id domain status; do
             if [ -n "$id" ] && [ "$id" != "None" ]; then
-                log_critical "  💰 $id | $domain | $status"
+                log_critical "   $id | $domain | $status"
             fi
         done
         return 1
     else
-        log_success "✅ No active CloudFront distributions"
+        log_success " No active CloudFront distributions"
         return 0
     fi
 }
 
 # Function to check Route 53 hosted zones
 check_route53_zones() {
-    log "🔍 Checking Route 53 hosted zones (Global)..."
+    log " Checking Route 53 hosted zones (Global)..."
     
     local zones=$(aws route53 list-hosted-zones --query 'HostedZones[].Id' --output text 2>/dev/null || echo "")
     
     if [ -n "$zones" ] && [ "$zones" != "None" ]; then
-        log_warning "⚠️  Route 53 hosted zones found:"
+        log_warning "  Route 53 hosted zones found:"
         echo "$zones" | while read -r zone_id; do
             if [ -n "$zone_id" ] && [ "$zone_id" != "None" ]; then
                 log_warning "  📦 $zone_id"
@@ -474,7 +474,7 @@ check_route53_zones() {
         done
         return 1
     else
-        log_success "✅ No Route 53 hosted zones"
+        log_success " No Route 53 hosted zones"
         return 0
     fi
 }
@@ -482,7 +482,7 @@ check_route53_zones() {
 # Function to check for hidden Kubernetes/container resources
 check_hidden_kubernetes_resources() {
     local region=$1
-    log "🔍 Checking for hidden Kubernetes/container resources in $region..."
+    log " Checking for hidden Kubernetes/container resources in $region..."
     
     local found_any=false
     
@@ -496,7 +496,7 @@ check_hidden_kubernetes_resources() {
         log_critical "🚨 KUBERNETES-RELATED EC2 INSTANCES FOUND in $region:"
         echo "$k8s_instances" | while read -r instance_id state instance_type name launch_time; do
             if [ -n "$instance_id" ] && [ "$instance_id" != "None" ]; then
-                log_critical "  💰 $instance_id | $state | $instance_type | $name | $launch_time"
+                log_critical "   $instance_id | $state | $instance_type | $name | $launch_time"
             fi
         done
         found_any=true
@@ -511,7 +511,7 @@ check_hidden_kubernetes_resources() {
         log_critical "🚨 KUBERNETES-RELATED AUTO SCALING GROUPS FOUND in $region:"
         echo "$k8s_asgs" | while read -r asg_name desired min max instances; do
             if [ -n "$asg_name" ] && [ "$asg_name" != "None" ]; then
-                log_critical "  💰 $asg_name | Desired:$desired | Min:$min | Max:$max | Instances:$instances"
+                log_critical "   $asg_name | Desired:$desired | Min:$min | Max:$max | Instances:$instances"
             fi
         done
         found_any=true
@@ -526,7 +526,7 @@ check_hidden_kubernetes_resources() {
         log_critical "🚨 KUBERNETES-RELATED LOAD BALANCERS FOUND in $region:"
         echo "$k8s_lbs" | while read -r name type state dns; do
             if [ -n "$name" ] && [ "$name" != "None" ]; then
-                log_critical "  💰 $name | $type | $state | $dns"
+                log_critical "   $name | $type | $state | $dns"
             fi
         done
         found_any=true
@@ -539,7 +539,7 @@ check_hidden_kubernetes_resources() {
         --output text 2>/dev/null || echo "")
     
     if [ -n "$k8s_sgs" ] && [ "$k8s_sgs" != "None" ]; then
-        log_warning "⚠️  KUBERNETES-RELATED SECURITY GROUPS FOUND in $region:"
+        log_warning "  KUBERNETES-RELATED SECURITY GROUPS FOUND in $region:"
         echo "$k8s_sgs" | while read -r group_id group_name description; do
             if [ -n "$group_id" ] && [ "$group_id" != "None" ]; then
                 log_warning "  📦 $group_id | $group_name | $description"
@@ -555,7 +555,7 @@ check_hidden_kubernetes_resources() {
         --output text 2>/dev/null || echo "")
     
     if [ -n "$k8s_vpcs" ] && [ "$k8s_vpcs" != "None" ]; then
-        log_warning "⚠️  KUBERNETES-RELATED VPCs FOUND in $region:"
+        log_warning "  KUBERNETES-RELATED VPCs FOUND in $region:"
         echo "$k8s_vpcs" | while read -r vpc_id state cidr; do
             if [ -n "$vpc_id" ] && [ "$vpc_id" != "None" ]; then
                 log_warning "  📦 $vpc_id | $state | $cidr"
@@ -571,7 +571,7 @@ check_hidden_kubernetes_resources() {
         --output text 2>/dev/null || echo "")
     
     if [ -n "$k8s_stacks" ] && [ "$k8s_stacks" != "None" ]; then
-        log_warning "⚠️  KUBERNETES-RELATED CLOUDFORMATION STACKS FOUND in $region:"
+        log_warning "  KUBERNETES-RELATED CLOUDFORMATION STACKS FOUND in $region:"
         echo "$k8s_stacks" | while read -r stack_name status creation_time; do
             if [ -n "$stack_name" ] && [ "$stack_name" != "None" ]; then
                 log_warning "  📦 $stack_name | $status | $creation_time"
@@ -581,7 +581,7 @@ check_hidden_kubernetes_resources() {
     fi
     
     if [ "$found_any" = false ]; then
-        log_success "✅ No hidden Kubernetes/container resources in $region"
+        log_success " No hidden Kubernetes/container resources in $region"
         return 0
     else
         return 1
@@ -591,7 +591,7 @@ check_hidden_kubernetes_resources() {
 # Function to check for EKS-related billing remnants
 check_eks_billing_remnants() {
     local region=$1
-    log "🔍 Checking for EKS billing remnants in $region..."
+    log " Checking for EKS billing remnants in $region..."
     
     local found_any=false
     
@@ -604,7 +604,7 @@ check_eks_billing_remnants() {
         log_critical "🚨 EKS-RELATED CLOUDWATCH LOG GROUPS FOUND in $region:"
         echo "$eks_logs" | while read -r log_group stored_bytes retention; do
             if [ -n "$log_group" ] && [ "$log_group" != "None" ]; then
-                log_critical "  💰 $log_group | Stored: $stored_bytes bytes | Retention: $retention days"
+                log_critical "   $log_group | Stored: $stored_bytes bytes | Retention: $retention days"
             fi
         done
         found_any=true
@@ -620,7 +620,7 @@ check_eks_billing_remnants() {
         log_critical "🚨 EKS-RELATED NETWORK INTERFACES FOUND in $region:"
         echo "$eks_enis" | while read -r eni_id status description private_ip; do
             if [ -n "$eni_id" ] && [ "$eni_id" != "None" ]; then
-                log_critical "  💰 $eni_id | $status | $description | $private_ip"
+                log_critical "   $eni_id | $status | $description | $private_ip"
             fi
         done
         found_any=true
@@ -633,14 +633,14 @@ check_eks_billing_remnants() {
         log_critical "🚨 EKS SERVICE-LINKED ROLES FOUND (Global):"
         echo "$eks_roles" | while read -r role_name create_date; do
             if [ -n "$role_name" ] && [ "$role_name" != "None" ]; then
-                log_critical "  💰 $role_name | Created: $create_date"
+                log_critical "   $role_name | Created: $create_date"
             fi
         done
         found_any=true
     fi
     
     if [ "$found_any" = false ]; then
-        log_success "✅ No EKS billing remnants in $region"
+        log_success " No EKS billing remnants in $region"
         return 0
     else
         return 1
@@ -650,7 +650,7 @@ check_eks_billing_remnants() {
 # Function to check for expensive instance types
 check_expensive_instances() {
     local region=$1
-    log "🔍 Checking for expensive instance types in $region..."
+    log " Checking for expensive instance types in $region..."
     
     # Define expensive instance types (these can cost $1+/hour)
     local expensive_types="c7i.8xlarge,c7i.4xlarge,c7i.2xlarge,m7i.8xlarge,m7i.4xlarge,m7i.2xlarge,r7i.8xlarge,r7i.4xlarge,r7i.2xlarge,p4d.24xlarge,p3.8xlarge,p3.2xlarge,g5.48xlarge,g5.24xlarge,g5.12xlarge"
@@ -664,19 +664,19 @@ check_expensive_instances() {
         log_critical "🚨 EXPENSIVE INSTANCE TYPES FOUND in $region (>$1/hour):"
         echo "$expensive_instances" | while read -r instance_id state instance_type name launch_time; do
             if [ -n "$instance_id" ] && [ "$instance_id" != "None" ]; then
-                log_critical "  💰💸 $instance_id | $state | $instance_type | $name | $launch_time"
+                log_critical "  💸 $instance_id | $state | $instance_type | $name | $launch_time"
             fi
         done
         return 1
     else
-        log_success "✅ No expensive instance types in $region"
+        log_success " No expensive instance types in $region"
         return 0
     fi
 }
 
 # Function to check IAM resources
 check_iam_resources() {
-    log "🔍 Checking IAM resources (Global)..."
+    log " Checking IAM resources (Global)..."
     
     # Check IAM users
     local users=$(aws iam list-users --query 'Users[].UserName' --output text 2>/dev/null || echo "")
@@ -713,14 +713,14 @@ check_iam_resources() {
         log_info "ℹ️  IAM policies found:"
         echo "$policies" | while read -r policy; do
             if [ -n "$policy" ] && [ "$policy" != "None" ]; then
-                log_info "  📋 $policy"
+                log_info "   $policy"
             fi
         done
         found_any=true
     fi
     
     if [ "$found_any" = false ]; then
-        log_success "✅ No IAM resources found"
+        log_success " No IAM resources found"
         return 0
     else
         return 1
@@ -734,7 +734,7 @@ check_region() {
     
     echo ""
     echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}🔍 DEEP PROBING REGION: $region${NC}"
+    echo -e "${CYAN} DEEP PROBING REGION: $region${NC}"
     echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}"
     
     # CRITICAL: Check for expensive instances first (like the c7i.8xlarge we found)
@@ -766,7 +766,7 @@ check_region() {
     
     echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}"
     if [ $total_issues -eq 0 ]; then
-        log_success "✅ Region $region is CLEAN - No cost-incurring resources found!"
+        log_success " Region $region is CLEAN - No cost-incurring resources found!"
     else
         log_critical "🚨 Region $region has $total_issues types of resources that may incur costs!"
     fi
@@ -779,7 +779,7 @@ check_region() {
 main() {
     echo -e "${PURPLE}"
     echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-    echo "║                    🔍 AWS RESOURCE DEEP PROBE SCRIPT 🔍                     ║"
+    echo "║                     AWS RESOURCE DEEP PROBE SCRIPT                      ║"
     echo "╠══════════════════════════════════════════════════════════════════════════════╣"
     echo "║  This script will scan ALL AWS regions for cost-incurring resources         ║"
     echo "║                                                                              ║"
@@ -789,12 +789,12 @@ main() {
     echo "║     • SageMaker Resources  • EFS File Systems   • Load Balancers           ║"
     echo "║     • NAT Gateways         • EXPENSIVE INSTANCES (>$1/hour)               ║"
     echo "║                                                                              ║"
-    echo "║  ⚠️  MEDIUM PRIORITY (Medium Cost):                                         ║"
+    echo "║    MEDIUM PRIORITY (Medium Cost):                                         ║"
     echo "║     • Lambda Functions     • ECS Services       • S3 Buckets               ║"
     echo "║     • DynamoDB Tables      • CloudFront         • Route 53                 ║"
     echo "║     • Fargate Tasks        • ECS Clusters                                   ║"
     echo "║                                                                              ║"
-    echo "║  🔍 COMPREHENSIVE DEEP PROBE (Hidden Billing Sources):                     ║"
+    echo "║   COMPREHENSIVE DEEP PROBE (Hidden Billing Sources):                     ║"
     echo "║     • Hidden K8s Resources • EKS Billing Remnants • CloudWatch Logs        ║"
     echo "║     • K8s-related ASGs     • K8s-related LBs     • K8s-related VPCs        ║"
     echo "║     • EKS Service Roles    • Network Interfaces  • CloudFormation Stacks   ║"
@@ -804,11 +804,11 @@ main() {
     echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     
-    log "🚀 Starting comprehensive AWS resource scan..."
+    log " Starting comprehensive AWS resource scan..."
     
     # Get AWS account info
     local account_id=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "Unknown")
-    log "📋 AWS Account ID: $account_id"
+    log " AWS Account ID: $account_id"
     
     # Check global services first
     log "🌐 Checking global services..."
@@ -839,7 +839,7 @@ main() {
     # Final summary
     echo ""
     echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║                            📊 SCAN SUMMARY 📊                                ║${NC}"
+    echo -e "${PURPLE}║                             SCAN SUMMARY                                 ║${NC}"
     echo -e "${PURPLE}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${PURPLE}║  Total Regions Scanned: $total_regions${NC}"
     echo -e "${PURPLE}║  Regions with Issues: $regions_with_issues${NC}"
@@ -847,12 +847,12 @@ main() {
     echo -e "${PURPLE}║                                                                              ║${NC}"
     
     if [ $total_issues -eq 0 ]; then
-        echo -e "${PURPLE}║  🎉 RESULT: Your AWS account is CLEAN! No cost-incurring resources found! ║${NC}"
-        log_success "🎉 Your AWS credits are safe! No resources found that could incur charges."
+        echo -e "${PURPLE}║   RESULT: Your AWS account is CLEAN! No cost-incurring resources found! ║${NC}"
+        log_success " Your AWS credits are safe! No resources found that could incur charges."
     else
         echo -e "${PURPLE}║  🚨 RESULT: Found resources that may incur costs! Review the output above. ║${NC}"
         log_critical "🚨 Found $total_issues types of resources that may incur costs!"
-        log_critical "💰 Review the output above and consider deleting unused resources."
+        log_critical " Review the output above and consider deleting unused resources."
     fi
     
     echo -e "${PURPLE}║                                                                              ║${NC}"
@@ -869,7 +869,7 @@ main() {
     log_info "   • Implement automated cleanup scripts for temporary resources"
     
     echo ""
-    log "🔍 Deep probe scan completed!"
+    log " Deep probe scan completed!"
     
     if [ $total_issues -gt 0 ]; then
         exit 1

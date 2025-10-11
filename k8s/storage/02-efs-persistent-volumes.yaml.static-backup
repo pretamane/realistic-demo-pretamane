@@ -18,11 +18,7 @@ spec:
   storageClassName: efs-sc-advanced
   csi:
     driver: efs.csi.aws.com
-    volumeHandle: fs-0075863cfd5b77ae1::fsap-0698cf703fee51337
-    volumeAttributes:
-      provisioningMode: efs-ap
-      fileSystemId: fs-0075863cfd5b77ae1
-      accessPointId: fsap-0698cf703fee51337
+    volumeHandle: fs-0b3a076e9c8805489::fsap-03631d1b648d4b51c
 ---
 # Shared EFS Persistent Volume for multi-pod access
 apiVersion: v1
@@ -43,11 +39,7 @@ spec:
   storageClassName: efs-sc-shared
   csi:
     driver: efs.csi.aws.com
-    volumeHandle: fs-0075863cfd5b77ae1::fsap-0698cf703fee51337
-    volumeAttributes:
-      provisioningMode: efs-ap
-      fileSystemId: fs-0075863cfd5b77ae1
-      accessPointId: fsap-0698cf703fee51337
+    volumeHandle: fs-0b3a076e9c8805489::fsap-03631d1b648d4b51c
 ---
 # Secure EFS Persistent Volume with restricted access
 apiVersion: v1
@@ -68,8 +60,4 @@ spec:
   storageClassName: efs-sc-secure
   csi:
     driver: efs.csi.aws.com
-    volumeHandle: fs-0075863cfd5b77ae1::fsap-0698cf703fee51337
-    volumeAttributes:
-      provisioningMode: efs-ap
-      fileSystemId: fs-0075863cfd5b77ae1
-      accessPointId: fsap-0698cf703fee51337
+    volumeHandle: fs-0b3a076e9c8805489::fsap-03631d1b648d4b51c

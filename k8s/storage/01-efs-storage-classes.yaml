@@ -14,12 +14,13 @@ metadata:
 provisioner: efs.csi.aws.com
 parameters:
   provisioningMode: efs-ap
-  fileSystemId: fs-0075863cfd5b77ae1
-  accessPointId: fsap-0698cf703fee51337
+  fileSystemId: fs-0a4d4b0d7fa4b85d4
   directoryPerms: "0755"
   uid: "1000"        # Enhanced: User ID specification
   gid: "1000"        # Enhanced: Group ID specification
-reclaimPolicy: Retain
+  gidRangeStart: "1000"
+  gidRangeEnd: "2000"
+reclaimPolicy: Delete
 allowVolumeExpansion: true
 volumeBindingMode: Immediate
 ---
@@ -37,12 +38,13 @@ metadata:
 provisioner: efs.csi.aws.com
 parameters:
   provisioningMode: efs-ap
-  fileSystemId: fs-0075863cfd5b77ae1
-  accessPointId: fsap-0698cf703fee51337
+  fileSystemId: fs-0a4d4b0d7fa4b85d4
   directoryPerms: "0755"
   uid: "1000"
   gid: "1000"
-reclaimPolicy: Retain
+  gidRangeStart: "1000"
+  gidRangeEnd: "2000"
+reclaimPolicy: Delete
 allowVolumeExpansion: true
 volumeBindingMode: Immediate
 ---
@@ -60,12 +62,13 @@ metadata:
 provisioner: efs.csi.aws.com
 parameters:
   provisioningMode: efs-ap
-  fileSystemId: fs-0075863cfd5b77ae1
-  accessPointId: fsap-0698cf703fee51337
+  fileSystemId: fs-0a4d4b0d7fa4b85d4
   directoryPerms: "0750"  # More restrictive permissions
   uid: "1000"
   gid: "1000"
-reclaimPolicy: Retain
+  gidRangeStart: "1000"
+  gidRangeEnd: "2000"
+reclaimPolicy: Delete
 allowVolumeExpansion: true
 volumeBindingMode: Immediate
 ---
@@ -83,11 +86,12 @@ metadata:
 provisioner: efs.csi.aws.com
 parameters:
   provisioningMode: efs-ap
-  fileSystemId: fs-0075863cfd5b77ae1
-  accessPointId: fsap-0698cf703fee51337
+  fileSystemId: fs-0a4d4b0d7fa4b85d4
   directoryPerms: "0755"
   uid: "1000"
   gid: "1000"
-reclaimPolicy: Retain
+  gidRangeStart: "1000"
+  gidRangeEnd: "2000"
+reclaimPolicy: Delete
 allowVolumeExpansion: true
 volumeBindingMode: Immediate

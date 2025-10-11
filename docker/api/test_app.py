@@ -67,18 +67,18 @@ try:
         except Exception as e:
             print(f"Contact endpoint failed (expected in test environment): {e}")
         
-        print("\n✅ FastAPI application structure is correct!")
-        print("📚 API Documentation available at: http://localhost:8000/docs")
-        print("🔍 Alternative docs at: http://localhost:8000/redoc")
+        print("\n FastAPI application structure is correct!")
+        print(" API Documentation available at: http://localhost:8000/docs")
+        print(" Alternative docs at: http://localhost:8000/redoc")
     
     if __name__ == "__main__":
         test_app()
         
 except ImportError as e:
-    print(f"❌ Import error: {e}")
+    print(f" Import error: {e}")
     print("Make sure all dependencies are installed:")
     print("pip install fastapi uvicorn boto3 python-dotenv pydantic[email]")
     sys.exit(1)
 except Exception as e:
-    print(f"❌ Error: {e}")
+    print(f" Error: {e}")
     sys.exit(1)
