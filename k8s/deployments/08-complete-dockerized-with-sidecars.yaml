@@ -1,0 +1,291 @@
+# Complete Dockerized Enhanced Application with Sidecars
+# Main container: Dockerized enhanced_app.py from ECR
+# Sidecar 1: RClone for S3 mounting
+# Sidecar 2: S3 Sync for backup/archival
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contact-api-complete
+  labels:
+    app: contact-api
+    version: complete
+    component: full-stack
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: contact-api
+      component: full-stack
+  template:
+    metadata:
+      labels:
+        app: contact-api
+        version: complete
+        component: full-stack
+    spec:
+      serviceAccountName: contact-api
+      
+      # Shared volume for S3 mounts
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: advanced-efs-pvc
+      - name: s3-mounts
+        emptyDir: {}
+      - name: shared-cache
+        emptyDir:
+          sizeLimit: 500Mi
+      
+      containers:
+      # Main Application Container - Dockerized enhanced_app.py
+      - name: enhanced-fastapi-app
+        image: 411911107156.dkr.ecr.ap-southeast-1.amazonaws.com/realistic-demo-pretamane-enhanced-app:latest
+        imagePullPolicy: Always
+        
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        
+        env:
+        - name: AWS_REGION
+          value: "ap-southeast-1"
+        - name: CONTACTS_TABLE
+          value: "realistic-demo-pretamane-contact-submissions"
+        - name: VISITORS_TABLE
+          value: "realistic-demo-pretamane-website-visitors"
+        - name: DOCUMENTS_TABLE
+          value: "realistic-demo-pretamane-documents"
+        - name: S3_DATA_BUCKET
+          value: "realistic-demo-pretamane-data-19dad61c"
+        - name: SES_FROM_EMAIL
+          value: "noreply@example.com"
+        - name: SES_TO_EMAIL
+          value: "admin@example.com"
+        - name: ALLOWED_ORIGIN
+          value: "*"
+        
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        - name: s3-mounts
+          mountPath: /mnt/s3
+        - name: shared-cache
+          mountPath: /tmp/cache
+        
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      
+      # Sidecar 1: RClone for S3 Mounting
+      - name: rclone-mount
+        image: rclone/rclone:latest
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - SYS_ADMIN
+        
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "Starting RClone S3 Mount Sidecar..."
+          
+          # Install fuse
+          apk add --no-cache fuse || true
+          
+          # Create RClone config
+          mkdir -p /root/.config/rclone
+          cat > /root/.config/rclone/rclone.conf << 'EOF'
+          [s3-data]
+          type = s3
+          provider = AWS
+          region = ap-southeast-1
+          env_auth = true
+          EOF
+          
+          # Create mount points
+          mkdir -p /mnt/s3/{data,index,realtime}
+          
+          # Mount S3 data bucket
+          echo "Mounting S3 buckets..."
+          rclone mount s3-data:${S3_DATA_BUCKET} /mnt/s3/data \
+            --allow-other \
+            --vfs-cache-mode writes \
+            --vfs-cache-max-size 200M \
+            --daemon || echo "Mount may already exist or failed"
+          
+          # Keep container running and monitor
+          echo "RClone mounts established. Monitoring..."
+          while true; do
+            if [ -d "/mnt/s3/data" ]; then
+              echo "$(date): S3 mounts active"
+            else
+              echo "$(date): Warning - S3 mounts not accessible"
+            fi
+            sleep 300
+          done
+        
+        env:
+        - name: S3_DATA_BUCKET
+          value: "realistic-demo-pretamane-data-19dad61c"
+        
+        volumeMounts:
+        - name: s3-mounts
+          mountPath: /mnt/s3
+          mountPropagation: Bidirectional
+        - name: shared-cache
+          mountPath: /tmp/cache
+        
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      
+      # Sidecar 2: S3 Sync Service
+      - name: s3-sync
+        image: rclone/rclone:latest
+        
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "Starting S3 Sync Sidecar..."
+          
+          # Create RClone config
+          mkdir -p /root/.config/rclone
+          cat > /root/.config/rclone/rclone.conf << 'EOF'
+          [s3-backup]
+          type = s3
+          provider = AWS
+          region = ap-southeast-1
+          env_auth = true
+          EOF
+          
+          echo "S3 Sync service initialized. Starting sync loop..."
+          
+          while true; do
+            echo "$(date): Starting sync cycle..."
+            
+            # Sync EFS uploads to S3 backup
+            if [ -d "/mnt/efs/uploads" ]; then
+              file_count=$(find /mnt/efs/uploads -type f 2>/dev/null | wc -l)
+              if [ "$file_count" -gt 0 ]; then
+                echo "Syncing $file_count files to S3 backup..."
+                rclone sync /mnt/efs/uploads s3-backup:${S3_BACKUP_BUCKET}/uploads \
+                  --progress \
+                  --log-level INFO \
+                  --transfers 4 || echo "Sync failed or no changes"
+              else
+                echo "No files to sync"
+              fi
+            fi
+            
+            # Sync logs
+            if [ -d "/mnt/efs/logs" ]; then
+              rclone sync /mnt/efs/logs s3-backup:${S3_BACKUP_BUCKET}/logs \
+                --max-age 7d \
+                --log-level INFO || echo "Log sync failed"
+            fi
+            
+            echo "$(date): Sync cycle complete. Sleeping 5 minutes..."
+            sleep 300
+          done
+        
+        env:
+        - name: S3_BACKUP_BUCKET
+          value: "realistic-demo-pretamane-data-19dad61c"
+        
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        - name: shared-cache
+          mountPath: /tmp/cache
+        
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: contact-api-complete
+  labels:
+    app: contact-api
+    component: full-stack
+spec:
+  type: LoadBalancer
+  selector:
+    app: contact-api
+    component: full-stack
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http-direct
+---
+# Ingress for Web UI Access via ALB
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: contact-api-complete-ingress
+  labels:
+    app: contact-api
+    component: full-stack
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/success-codes: '200'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: contact-api-complete
+            port:
+              number: 80
+
