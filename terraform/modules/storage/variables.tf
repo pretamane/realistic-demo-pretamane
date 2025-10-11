@@ -97,10 +97,15 @@ variable "opensearch_master_user" {
 }
 
 variable "opensearch_master_password" {
-  description = "OpenSearch master password"
+  description = "OpenSearch master password - MUST be provided via environment variable or terraform.tfvars"
   type        = string
   sensitive   = true
-  default     = "Admin123!"
+  default     = ""  # No default - must be explicitly provided
+  
+  validation {
+    condition     = length(var.opensearch_master_password) >= 8
+    error_message = "OpenSearch password must be at least 8 characters long."
+  }
 }
 
 # S3 Configuration

@@ -16,6 +16,14 @@ output "website_visitors_table_arn" {
   value = aws_dynamodb_table.website_visitors.arn
 }
 
+output "documents_table_name" {
+  value = aws_dynamodb_table.documents.name
+}
+
+output "documents_table_arn" {
+  value = aws_dynamodb_table.documents.arn
+}
+
 output "app_role_arn" {
   value = aws_iam_role.app_role.arn
 }

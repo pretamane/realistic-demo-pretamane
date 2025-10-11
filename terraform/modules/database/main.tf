@@ -84,6 +84,58 @@ resource "aws_dynamodb_table" "website_visitors" {
   }
 }
 
+# Documents Table (for enhanced_app.py)
+resource "aws_dynamodb_table" "documents" {
+  name           = "${var.project_name}-documents"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "contact_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "upload_timestamp"
+    type = "S"
+  }
+
+  # Global Secondary Index for contact queries
+  global_secondary_index {
+    name            = "contact-id-index"
+    hash_key        = "contact_id"
+    projection_type = "ALL"
+  }
+
+  # Global Secondary Index for timestamp queries
+  global_secondary_index {
+    name            = "timestamp-index"
+    hash_key        = "upload_timestamp"
+    projection_type = "ALL"
+  }
+
+  # Point-in-time recovery
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  # Server-side encryption
+  server_side_encryption {
+    enabled = true
+  }
+
+  tags = {
+    Name        = "${var.project_name}-documents"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
 # ---------------------------
 # SES Configuration
 # ---------------------------

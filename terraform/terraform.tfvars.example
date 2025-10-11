@@ -1,0 +1,20 @@
+# Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in actual values
+# terraform.tfvars is gitignored and will NOT be committed
+
+# Project Configuration
+project_name = "realistic-demo-pretamane"
+region       = "ap-southeast-1"
+
+# SES Email Configuration (required for contact form)
+ses_from_email = "your-verified-email@example.com"
+ses_to_email   = "admin@example.com"
+
+# OpenSearch Master Password (REQUIRED - no default for security)
+# Generate a secure password: openssl rand -base64 32 | tr -d '/+=' | cut -c1-20
+# Or use: aws secretsmanager get-random-password --password-length 20
+opensearch_master_password = "CHANGE_ME_TO_SECURE_PASSWORD"
+
+# Free Tier Mode (optional)
+free_tier_mode = false
+

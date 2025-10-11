@@ -75,7 +75,7 @@ module "storage" {
   opensearch_dedicated_master    = false
   opensearch_volume_size         = 20
   opensearch_master_user         = "admin"
-  opensearch_master_password     = "Admin123!"
+  opensearch_master_password     = var.opensearch_master_password  # Must be provided via terraform.tfvars or TF_VAR_opensearch_master_password
   enable_s3_notifications        = true
 }
 

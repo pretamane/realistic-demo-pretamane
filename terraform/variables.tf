@@ -29,3 +29,9 @@ variable "ses_to_email" {
   type        = string
   default     = ""
 }
+
+variable "opensearch_master_password" {
+  description = "OpenSearch master password (required, no default for security)"
+  type        = string
+  sensitive   = true
+}

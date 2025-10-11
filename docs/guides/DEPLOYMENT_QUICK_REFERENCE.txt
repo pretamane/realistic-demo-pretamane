@@ -1,0 +1,119 @@
+================================================================================
+                    QUICK DEPLOYMENT REFERENCE CARD
+================================================================================
+
+START DEPLOYMENT:
+  ./scripts/test-deploy-comprehensive.sh
+
+MONITOR DEPLOYMENT:
+  ./scripts/monitor-deployment.sh
+
+QUICK CHECKS:
+  kubectl get pods -w                          # Watch pods
+  kubectl get pods -o wide                     # Detailed pod info
+  kubectl get svc                              # Services
+  kubectl get ingress                          # Ingress/ALB
+  kubectl get pvc                              # Storage claims
+  kubectl get hpa                              # Auto-scaling
+
+POD DEBUGGING:
+  kubectl describe pod <pod-name>              # Detailed info
+  kubectl logs <pod-name>                      # Application logs
+  kubectl logs <pod-name> -f                   # Follow logs
+  kubectl logs <pod-name> --previous           # Previous crash logs
+  kubectl exec -it <pod-name> -- /bin/bash     # Shell into pod
+
+STORAGE CHECKS:
+  kubectl get pv                               # Persistent volumes
+  kubectl get pvc                              # Volume claims
+  kubectl describe pvc <pvc-name>              # Claim details
+  kubectl get sc                               # Storage classes
+
+AWS RESOURCE CHECKS:
+  aws eks list-clusters --region ap-southeast-1
+  aws efs describe-file-systems
+  aws dynamodb list-tables
+  aws s3 ls | grep realistic-demo
+  aws opensearch list-domain-names
+
+DEPLOYMENT STATUS:
+  kubectl rollout status deployment/<name>     # Check rollout
+  kubectl get events --sort-by='.lastTimestamp' # Recent events
+  kubectl top nodes                            # Node resources
+  kubectl top pods                             # Pod resources
+
+CLEANUP EVERYTHING:
+  cd terraform && terraform destroy
+  OR
+  ./scripts/nuke-aws-everything.sh
+
+COMMON ISSUES & FIXES:
+
+1. Pods stuck in "Pending":
+   kubectl describe pvc                        # Check PVC binding
+   kubectl describe pod <pod-name>             # Check events
+   kubectl get nodes                           # Check node capacity
+
+2. Pods stuck in "ContainerCreating":
+   kubectl describe pod <pod-name>             # Check mount issues
+   kubectl get secrets                         # Verify secrets exist
+
+3. Pods in "CrashLoopBackOff":
+   kubectl logs <pod-name> --previous          # Check crash logs
+   kubectl describe pod <pod-name>             # Check reason
+
+4. PVC not binding:
+   kubectl get pv                              # Check available PVs
+   kubectl describe pvc <pvc-name>             # Check binding status
+   kubectl get sc                              # Check storage classes
+
+5. Application not accessible:
+   kubectl get ingress                         # Get ALB URL
+   kubectl describe ingress <name>             # Check configuration
+   kubectl get svc                             # Check service endpoints
+
+ESTIMATED TIMELINE:
+  Terraform Deploy:      10-15 minutes
+  Kubernetes Deploy:     5-10 minutes
+  Pod Initialization:    5-10 minutes
+  Total:                 20-35 minutes
+
+COST MONITORING:
+  aws ce get-cost-and-usage --time-period Start=2025-10-01,End=2025-10-31 \
+    --granularity MONTHLY --metrics BlendedCost
+
+LOG FILES:
+  Deployment logs: /tmp/test-deploy-realistic-demo-pretamane-*.log
+  Terraform logs: terraform/terraform.log (if exists)
+
+HELPFUL KUBECTL ALIASES (optional):
+  alias k=kubectl
+  alias kgp='kubectl get pods'
+  alias kgpw='kubectl get pods -w'
+  alias kl='kubectl logs'
+  alias kd='kubectl describe'
+  alias ke='kubectl get events --sort-by='.lastTimestamp''
+
+================================================================================
+                    PRODUCTION CHECKLIST
+================================================================================
+
+Before considering this production-ready:
+  [ ] Update email addresses in terraform.tfvars
+  [ ] Configure proper SSL certificates for ingress
+  [ ] Set up monitoring and alerting
+  [ ] Configure backup schedules
+  [ ] Review and adjust resource limits
+  [ ] Set up cost budgets and alerts
+  [ ] Implement proper secret management (AWS Secrets Manager)
+  [ ] Configure network policies
+  [ ] Set up CI/CD pipelines
+  [ ] Review and harden security groups
+  [ ] Enable AWS CloudTrail
+  [ ] Configure log aggregation
+  [ ] Set up disaster recovery plan
+  [ ] Document operational procedures
+
+================================================================================
+
+Created: $(date)
