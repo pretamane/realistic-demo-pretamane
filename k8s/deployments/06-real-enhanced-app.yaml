@@ -1,0 +1,134 @@
+# Real Enhanced Application Deployment
+# Uses the actual enhanced_app.py file from docker/api/
+# ConfigMap must be created separately: kubectl create configmap enhanced-app-code --from-file=enhanced_app.py=docker/api/enhanced_app.py
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contact-api-real-enhanced
+  labels:
+    app: contact-api
+    version: real-enhanced
+    component: enhanced-application
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: contact-api
+      component: enhanced-application
+  template:
+    metadata:
+      labels:
+        app: contact-api
+        version: real-enhanced
+        component: enhanced-application
+    spec:
+      serviceAccountName: contact-api
+      containers:
+      - name: enhanced-fastapi-app
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          echo "Starting Real Enhanced FastAPI Application..."
+          
+          # Install dependencies
+          pip install --no-cache-dir fastapi uvicorn boto3 pydantic[email] python-multipart aiofiles opensearch-py
+          
+          # Create app directory
+          mkdir -p /app
+          cd /app
+          
+          # Copy the real enhanced_app.py from ConfigMap
+          cp /app-code/enhanced_app.py /app/enhanced_app.py
+          
+          # Verify file exists and size
+          if [ ! -f /app/enhanced_app.py ]; then
+            echo "ERROR: enhanced_app.py not found!"
+            exit 1
+          fi
+          
+          echo "File size: $(wc -l < /app/enhanced_app.py) lines"
+          echo "First line: $(head -1 /app/enhanced_app.py)"
+          echo "Starting application..."
+          
+          # Run the application
+          uvicorn enhanced_app:app --host 0.0.0.0 --port 8000
+        
+        ports:
+        - containerPort: 8000
+          name: http
+        
+        env:
+        - name: AWS_REGION
+          value: "ap-southeast-1"
+        - name: CONTACTS_TABLE
+          value: "realistic-demo-pretamane-contact-submissions"
+        - name: VISITORS_TABLE
+          value: "realistic-demo-pretamane-website-visitors"
+        - name: DOCUMENTS_TABLE
+          value: "realistic-demo-pretamane-documents"
+        - name: S3_DATA_BUCKET
+          value: "realistic-demo-pretamane-data-19dad61c"
+        - name: SES_FROM_EMAIL
+          value: "noreply@example.com"
+        - name: SES_TO_EMAIL
+          value: "admin@example.com"
+        
+        volumeMounts:
+        - name: app-code
+          mountPath: /app-code
+        - name: efs-storage
+          mountPath: /mnt/efs
+        
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      
+      volumes:
+      - name: app-code
+        configMap:
+          name: enhanced-app-code
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: advanced-efs-pvc
+---
+# Instructions to deploy:
+#
+# 1. Create ConfigMap from real enhanced_app.py file:
+#    kubectl create configmap enhanced-app-code --from-file=enhanced_app.py=docker/api/enhanced_app.py --dry-run=client -o yaml | kubectl apply -f -
+#
+# 2. Deploy this file:
+#    kubectl apply -f k8s/deployments/06-real-enhanced-app.yaml
+#
+# 3. Wait for deployment:
+#    kubectl rollout status deployment/contact-api-real-enhanced
+#
+# 4. Test the application:
+#    kubectl port-forward deployment/contact-api-real-enhanced 8000:8000
+#    curl http://localhost:8000/
+#
+
