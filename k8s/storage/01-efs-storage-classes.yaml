@@ -14,7 +14,8 @@ metadata:
 provisioner: efs.csi.aws.com
 parameters:
   provisioningMode: efs-ap
-  fileSystemId: fs-0a4d4b0d7fa4b85d4
+  fileSystemId: fs-0caa6a2e47156c644
+  accessPointId: fsap-0e5b580d406492811
   directoryPerms: "0755"
   uid: "1000"        # Enhanced: User ID specification
   gid: "1000"        # Enhanced: Group ID specification
@@ -38,7 +39,8 @@ metadata:
 provisioner: efs.csi.aws.com
 parameters:
   provisioningMode: efs-ap
-  fileSystemId: fs-0a4d4b0d7fa4b85d4
+  fileSystemId: fs-0caa6a2e47156c644
+  accessPointId: fsap-0e5b580d406492811
   directoryPerms: "0755"
   uid: "1000"
   gid: "1000"
@@ -62,7 +64,8 @@ metadata:
 provisioner: efs.csi.aws.com
 parameters:
   provisioningMode: efs-ap
-  fileSystemId: fs-0a4d4b0d7fa4b85d4
+  fileSystemId: fs-0caa6a2e47156c644
+  accessPointId: fsap-0e5b580d406492811
   directoryPerms: "0750"  # More restrictive permissions
   uid: "1000"
   gid: "1000"
@@ -86,7 +89,8 @@ metadata:
 provisioner: efs.csi.aws.com
 parameters:
   provisioningMode: efs-ap
-  fileSystemId: fs-0a4d4b0d7fa4b85d4
+  fileSystemId: fs-0caa6a2e47156c644
+  accessPointId: fsap-0e5b580d406492811
   directoryPerms: "0755"
   uid: "1000"
   gid: "1000"

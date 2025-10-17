@@ -75,12 +75,5 @@ output "opensearch_access_policy_arn" {
 }
 
 # Lambda Outputs (if enabled)
-output "lambda_function_arn" {
-  description = "ARN of the Lambda function"
-  value       = var.enable_s3_notifications ? aws_lambda_function.s3_processor[0].arn : null
-}
-
-output "lambda_function_name" {
-  description = "Name of the Lambda function"
-  value       = var.enable_s3_notifications ? aws_lambda_function.s3_processor[0].function_name : null
-}
+# Lambda function outputs - REMOVED
+# Functionality consolidated into unified FastAPI application

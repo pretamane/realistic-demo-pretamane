@@ -1,0 +1,21 @@
+# External Access via NodePort (Alternative to ALB)
+# Provides external access to API docs and testing interfaces
+apiVersion: v1
+kind: Service
+metadata:
+  name: unified-enhanced-app-external
+  namespace: default
+  labels:
+    app: unified-enhanced-app
+    component: external-access
+    tier: documentation
+spec:
+  type: NodePort
+  selector:
+    app: unified-enhanced-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+      nodePort: 30080
+  externalTrafficPolicy: Cluster

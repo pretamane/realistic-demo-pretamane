@@ -1,0 +1,126 @@
+# Authorization Policies for Service Mesh Security
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: contact-api-authz
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: contact-api
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/monitoring/sa/grafana"]
+    - source:
+        principals: ["cluster.local/ns/monitoring/sa/prometheus"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/health", "/metrics"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/*"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: enhanced-document-processor-authz
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: enhanced-document-processor
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/monitoring/sa/prometheus"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/metrics"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/default/sa/contact-api"]
+    to:
+    - operation:
+        methods: ["POST"]
+        paths: ["/documents/upload", "/documents/search"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+    to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/analytics", "/search"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: grafana-authz
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+    to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/*"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/monitoring/sa/prometheus"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/health"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: prometheus-authz
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/monitoring/sa/grafana"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/v1/*"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/default/sa/contact-api"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/metrics"]
+---
+# Deny all other traffic by default
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: default
+spec:
+  {}
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all-monitoring
+  namespace: monitoring
+spec:
+  {}

@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unified-enhanced-app
+  namespace: default
+  labels:
+    app: unified-enhanced-app
+    version: unified
+    component: main-application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unified-enhanced-app
+  template:
+    metadata:
+      labels:
+        app: unified-enhanced-app
+        version: unified
+        component: main-application
+    spec:
+      serviceAccountName: contact-api
+      containers:
+      - name: unified-fastapi-app
+        image: 411911107156.dkr.ecr.ap-southeast-1.amazonaws.com/realistic-demo-pretamane-unified:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: AWS_REGION
+          value: ap-southeast-1
+        - name: CONTACTS_TABLE
+          value: realistic-demo-pretamane-contact-submissions
+        - name: VISITORS_TABLE
+          value: realistic-demo-pretamane-website-visitors
+        - name: DOCUMENTS_TABLE
+          value: realistic-demo-pretamane-documents
+        - name: S3_DATA_BUCKET
+          value: realistic-demo-pretamane-data-9ff77470
+        - name: SES_FROM_EMAIL
+          value: noreply@demo-pretamane.com
+        - name: SES_TO_EMAIL
+          value: admin@demo-pretamane.com
+        - name: OPENSEARCH_ENDPOINT
+          value: https://vpc-pretamane-search-bbvuc4prbeuhwgf3lxvade7sdy.ap-southeast-1.es.amazonaws.com # Placeholder, will be replaced by Terraform output
+        - name: OPENSEARCH_USERNAME
+          value: admin
+        - name: OPENSEARCH_PASSWORD
+          value: DemoPretamane2024! # Placeholder, will be replaced by Terraform output
+        - name: ALLOWED_ORIGIN
+          value: "*"
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt/efs
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: advanced-efs-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: unified-enhanced-app-service
+  namespace: default
+  labels:
+    app: unified-enhanced-app
+    component: main-application
+spec:
+  selector:
+    app: unified-enhanced-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP

@@ -1,0 +1,26 @@
+# Istio Service Mesh Namespace Configuration
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-system
+  labels:
+    name: istio-system
+    istio-injection: disabled
+---
+# Application namespace with Istio injection enabled
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+  labels:
+    name: default
+    istio-injection: enabled
+---
+# Monitoring namespace with Istio injection enabled
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    name: monitoring
+    istio-injection: enabled

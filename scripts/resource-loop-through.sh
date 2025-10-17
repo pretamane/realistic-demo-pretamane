@@ -1,10 +1,11 @@
 #!/bin/bash
 
-#  AWS Resource Deep Probe Script
-# Comprehensive inspection of ALL AWS services across ALL regions
+#  AWS Resource Deep Probe & NUKE Script
+# Comprehensive inspection AND DELETION of ALL AWS services across ALL regions
 # Prioritizes high-cost services that can spike charges if left undetected
+# Enhanced to cover realistic-demo-pretamane architecture completely
 
-set -e
+# Removed 'set -e' to allow script to continue even when resources are not found
 
 # Colors for output
 RED='\033[0;31m'
@@ -14,6 +15,9 @@ BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
+
+# Deletion mode flag
+DELETE_MODE=${1:-"scan"}  # "scan" or "nuke"
 
 # Logging functions
 log() {
@@ -694,6 +698,11 @@ check_iam_resources() {
         echo "$users" | while read -r user; do
             if [ -n "$user" ] && [ "$user" != "None" ]; then
                 log_info "  👤 $user"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    log_critical "DELETING IAM user: $user"
+                    aws iam delete-user --user-name "$user" 2>/dev/null || log_error "Failed to delete user $user"
+                fi
             fi
         done
         found_any=true
@@ -704,6 +713,26 @@ check_iam_resources() {
         echo "$roles" | while read -r role; do
             if [ -n "$role" ] && [ "$role" != "None" ]; then
                 log_info "  🔑 $role"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    # Skip AWS service-linked roles
+                    if [[ ! "$role" =~ ^AWSServiceRole ]]; then
+                        log_critical "DELETING IAM role: $role"
+                        # Detach policies first
+                        aws iam list-attached-role-policies --role-name "$role" --query 'AttachedPolicies[].PolicyArn' --output text 2>/dev/null | while read -r policy_arn; do
+                            if [ -n "$policy_arn" ]; then
+                                aws iam detach-role-policy --role-name "$role" --policy-arn "$policy_arn" 2>/dev/null
+                            fi
+                        done
+                        # Delete inline policies
+                        aws iam list-role-policies --role-name "$role" --query 'PolicyNames[]' --output text 2>/dev/null | while read -r policy_name; do
+                            if [ -n "$policy_name" ]; then
+                                aws iam delete-role-policy --role-name "$role" --policy-name "$policy_name" 2>/dev/null
+                            fi
+                        done
+                        aws iam delete-role --role-name "$role" 2>/dev/null || log_error "Failed to delete role $role"
+                    fi
+                fi
             fi
         done
         found_any=true
@@ -714,6 +743,21 @@ check_iam_resources() {
         echo "$policies" | while read -r policy; do
             if [ -n "$policy" ] && [ "$policy" != "None" ]; then
                 log_info "   $policy"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    log_critical "DELETING IAM policy: $policy"
+                    # Get policy ARN
+                    local policy_arn=$(aws iam list-policies --scope Local --query "Policies[?PolicyName=='$policy'].Arn" --output text 2>/dev/null)
+                    if [ -n "$policy_arn" ]; then
+                        # Delete all policy versions except default
+                        aws iam list-policy-versions --policy-arn "$policy_arn" --query 'Versions[?!IsDefaultVersion].VersionId' --output text 2>/dev/null | while read -r version_id; do
+                            if [ -n "$version_id" ]; then
+                                aws iam delete-policy-version --policy-arn "$policy_arn" --version-id "$version_id" 2>/dev/null
+                            fi
+                        done
+                        aws iam delete-policy --policy-arn "$policy_arn" 2>/dev/null || log_error "Failed to delete policy $policy"
+                    fi
+                fi
             fi
         done
         found_any=true
@@ -724,6 +768,288 @@ check_iam_resources() {
         return 0
     else
         return 1
+    fi
+}
+
+# Function to check ECR repositories
+check_ecr_repositories() {
+    local region=$1
+    log " Checking ECR repositories in $region..."
+    
+    local repos=$(aws ecr describe-repositories --region $region --query 'repositories[].repositoryName' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$repos" ] && [ "$repos" != "None" ]; then
+        log_critical "🚨 ECR REPOSITORIES FOUND in $region:"
+        echo "$repos" | while read -r repo; do
+            if [ -n "$repo" ] && [ "$repo" != "None" ]; then
+                log_critical "   $repo"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    log_critical "DELETING ECR repository: $repo"
+                    aws ecr delete-repository --region $region --repository-name "$repo" --force 2>/dev/null || log_error "Failed to delete ECR repo $repo"
+                fi
+            fi
+        done
+        return 1
+    else
+        log_success " No ECR repositories in $region"
+        return 0
+    fi
+}
+
+# Function to check Backup vaults and recovery points
+check_backup_resources() {
+    local region=$1
+    log " Checking AWS Backup resources in $region..."
+    
+    local found_any=false
+    
+    # Check backup vaults
+    local vaults=$(aws backup list-backup-vaults --region $region --query 'BackupVaultList[].BackupVaultName' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$vaults" ] && [ "$vaults" != "None" ]; then
+        log_critical "🚨 BACKUP VAULTS FOUND in $region:"
+        echo "$vaults" | while read -r vault; do
+            if [ -n "$vault" ] && [ "$vault" != "None" ]; then
+                log_critical "   $vault"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    # Delete recovery points first
+                    log_critical "Deleting recovery points in vault: $vault"
+                    aws backup list-recovery-points-by-backup-vault --region $region --backup-vault-name "$vault" --query 'RecoveryPoints[].RecoveryPointArn' --output text 2>/dev/null | while read -r recovery_point; do
+                        if [ -n "$recovery_point" ]; then
+                            aws backup delete-recovery-point --region $region --backup-vault-name "$vault" --recovery-point-arn "$recovery_point" 2>/dev/null || log_error "Failed to delete recovery point"
+                        fi
+                    done
+                    sleep 5  # Wait for recovery points to be deleted
+                    log_critical "DELETING backup vault: $vault"
+                    aws backup delete-backup-vault --region $region --backup-vault-name "$vault" 2>/dev/null || log_error "Failed to delete vault $vault"
+                fi
+            fi
+        done
+        found_any=true
+    fi
+    
+    # Check backup plans
+    local plans=$(aws backup list-backup-plans --region $region --query 'BackupPlansList[].BackupPlanId' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$plans" ] && [ "$plans" != "None" ]; then
+        log_critical "🚨 BACKUP PLANS FOUND in $region:"
+        echo "$plans" | while read -r plan_id; do
+            if [ -n "$plan_id" ] && [ "$plan_id" != "None" ]; then
+                log_critical "   $plan_id"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    log_critical "DELETING backup plan: $plan_id"
+                    aws backup delete-backup-plan --region $region --backup-plan-id "$plan_id" 2>/dev/null || log_error "Failed to delete backup plan $plan_id"
+                fi
+            fi
+        done
+        found_any=true
+    fi
+    
+    if [ "$found_any" = false ]; then
+        log_success " No backup resources in $region"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check Internet Gateways
+check_internet_gateways() {
+    local region=$1
+    log " Checking Internet Gateways in $region..."
+    
+    local igws=$(aws ec2 describe-internet-gateways --region $region --query 'InternetGateways[?Attachments[0].State==`available`].[InternetGatewayId,Tags[?Key==`Name`].Value|[0]]' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$igws" ] && [ "$igws" != "None" ]; then
+        log_critical "🚨 INTERNET GATEWAYS FOUND in $region:"
+        echo "$igws" | while read -r igw_id name; do
+            if [ -n "$igw_id" ] && [ "$igw_id" != "None" ]; then
+                log_critical "   $igw_id | $name"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    # Detach from VPC first
+                    local vpc_id=$(aws ec2 describe-internet-gateways --region $region --internet-gateway-ids "$igw_id" --query 'InternetGateways[0].Attachments[0].VpcId' --output text 2>/dev/null)
+                    if [ -n "$vpc_id" ] && [ "$vpc_id" != "None" ]; then
+                        log_critical "Detaching IGW $igw_id from VPC $vpc_id"
+                        aws ec2 detach-internet-gateway --region $region --internet-gateway-id "$igw_id" --vpc-id "$vpc_id" 2>/dev/null
+                    fi
+                    log_critical "DELETING Internet Gateway: $igw_id"
+                    aws ec2 delete-internet-gateway --region $region --internet-gateway-id "$igw_id" 2>/dev/null || log_error "Failed to delete IGW $igw_id"
+                fi
+            fi
+        done
+        return 1
+    else
+        log_success " No Internet Gateways in $region"
+        return 0
+    fi
+}
+
+# Function to check Route Tables
+check_route_tables() {
+    local region=$1
+    log " Checking Route Tables in $region..."
+    
+    local route_tables=$(aws ec2 describe-route-tables --region $region --query 'RouteTables[?Associations[0].Main==`false`].[RouteTableId,Tags[?Key==`Name`].Value|[0]]' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$route_tables" ] && [ "$route_tables" != "None" ]; then
+        log_warning "  Custom Route Tables found in $region:"
+        echo "$route_tables" | while read -r rt_id name; do
+            if [ -n "$rt_id" ] && [ "$rt_id" != "None" ]; then
+                log_warning "  📦 $rt_id | $name"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    log_critical "DELETING Route Table: $rt_id"
+                    # Disassociate subnets first
+                    aws ec2 describe-route-tables --region $region --route-table-ids "$rt_id" --query 'RouteTables[0].Associations[].RouteTableAssociationId' --output text 2>/dev/null | while read -r assoc_id; do
+                        if [ -n "$assoc_id" ] && [[ "$assoc_id" != rtbassoc-* ]]; then
+                            aws ec2 disassociate-route-table --region $region --association-id "$assoc_id" 2>/dev/null
+                        fi
+                    done
+                    aws ec2 delete-route-table --region $region --route-table-id "$rt_id" 2>/dev/null || log_error "Failed to delete route table $rt_id"
+                fi
+            fi
+        done
+        return 1
+    else
+        log_success " No custom Route Tables in $region"
+        return 0
+    fi
+}
+
+# Function to check Subnets
+check_subnets() {
+    local region=$1
+    log " Checking Subnets in $region..."
+    
+    local subnets=$(aws ec2 describe-subnets --region $region --query 'Subnets[].[SubnetId,Tags[?Key==`Name`].Value|[0],AvailabilityZone]' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$subnets" ] && [ "$subnets" != "None" ]; then
+        log_warning "  Subnets found in $region:"
+        echo "$subnets" | while read -r subnet_id name az; do
+            if [ -n "$subnet_id" ] && [ "$subnet_id" != "None" ]; then
+                log_warning "  📦 $subnet_id | $name | $az"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    log_critical "DELETING Subnet: $subnet_id"
+                    aws ec2 delete-subnet --region $region --subnet-id "$subnet_id" 2>/dev/null || log_error "Failed to delete subnet $subnet_id"
+                fi
+            fi
+        done
+        return 1
+    else
+        log_success " No Subnets in $region"
+        return 0
+    fi
+}
+
+# Function to check VPCs
+check_vpcs() {
+    local region=$1
+    log " Checking VPCs in $region..."
+    
+    local vpcs=$(aws ec2 describe-vpcs --region $region --query 'Vpcs[?!IsDefault].[VpcId,Tags[?Key==`Name`].Value|[0],CidrBlock]' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$vpcs" ] && [ "$vpcs" != "None" ]; then
+        log_critical "🚨 CUSTOM VPCs FOUND in $region:"
+        echo "$vpcs" | while read -r vpc_id name cidr; do
+            if [ -n "$vpc_id" ] && [ "$vpc_id" != "None" ]; then
+                log_critical "   $vpc_id | $name | $cidr"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    log_critical "DELETING VPC dependencies for: $vpc_id"
+                    # Delete all dependencies first (done by other functions)
+                    # This will be called last
+                    log_critical "DELETING VPC: $vpc_id"
+                    aws ec2 delete-vpc --region $region --vpc-id "$vpc_id" 2>/dev/null || log_error "Failed to delete VPC $vpc_id (may have dependencies)"
+                fi
+            fi
+        done
+        return 1
+    else
+        log_success " No custom VPCs in $region"
+        return 0
+    fi
+}
+
+# Function to check EBS Volumes
+check_ebs_volumes() {
+    local region=$1
+    log " Checking EBS Volumes in $region..."
+    
+    local volumes=$(aws ec2 describe-volumes --region $region --query 'Volumes[].[VolumeId,State,Size,Tags[?Key==`Name`].Value|[0]]' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$volumes" ] && [ "$volumes" != "None" ]; then
+        log_warning "  EBS Volumes found in $region:"
+        echo "$volumes" | while read -r volume_id state size name; do
+            if [ -n "$volume_id" ] && [ "$volume_id" != "None" ]; then
+                log_warning "  📦 $volume_id | $state | ${size}GB | $name"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    log_critical "DELETING EBS Volume: $volume_id"
+                    aws ec2 delete-volume --region $region --volume-id "$volume_id" 2>/dev/null || log_error "Failed to delete volume $volume_id (may be attached)"
+                fi
+            fi
+        done
+        return 1
+    else
+        log_success " No EBS Volumes in $region"
+        return 0
+    fi
+}
+
+# Function to check EBS Snapshots
+check_ebs_snapshots() {
+    local region=$1
+    log " Checking EBS Snapshots in $region..."
+    
+    local snapshots=$(aws ec2 describe-snapshots --region $region --owner-ids self --query 'Snapshots[].[SnapshotId,State,VolumeSize]' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$snapshots" ] && [ "$snapshots" != "None" ]; then
+        log_warning "  EBS Snapshots found in $region:"
+        echo "$snapshots" | while read -r snapshot_id state size; do
+            if [ -n "$snapshot_id" ] && [ "$snapshot_id" != "None" ]; then
+                log_warning "  📦 $snapshot_id | $state | ${size}GB"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    log_critical "DELETING EBS Snapshot: $snapshot_id"
+                    aws ec2 delete-snapshot --region $region --snapshot-id "$snapshot_id" 2>/dev/null || log_error "Failed to delete snapshot $snapshot_id"
+                fi
+            fi
+        done
+        return 1
+    else
+        log_success " No EBS Snapshots in $region"
+        return 0
+    fi
+}
+
+# Function to check Elastic IPs
+check_elastic_ips() {
+    local region=$1
+    log " Checking Elastic IPs in $region..."
+    
+    local eips=$(aws ec2 describe-addresses --region $region --query 'Addresses[].[AllocationId,PublicIp]' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$eips" ] && [ "$eips" != "None" ]; then
+        log_critical "🚨 ELASTIC IPs FOUND in $region:"
+        echo "$eips" | while read -r allocation_id public_ip; do
+            if [ -n "$allocation_id" ] && [ "$allocation_id" != "None" ]; then
+                log_critical "   $allocation_id | $public_ip"
+                
+                if [ "$DELETE_MODE" = "nuke" ]; then
+                    log_critical "RELEASING Elastic IP: $allocation_id"
+                    aws ec2 release-address --region $region --allocation-id "$allocation_id" 2>/dev/null || log_error "Failed to release EIP $allocation_id"
+                fi
+            fi
+        done
+        return 1
+    else
+        log_success " No Elastic IPs in $region"
+        return 0
     fi
 }
 
@@ -764,6 +1090,28 @@ check_region() {
     # COMPREHENSIVE: Check for EKS billing remnants
     check_eks_billing_remnants $region || ((total_issues++))
     
+    # NEW: Additional infrastructure components
+    check_ecr_repositories $region || ((total_issues++))
+    check_backup_resources $region || ((total_issues++))
+    check_elastic_ips $region || ((total_issues++))
+    check_ebs_volumes $region || ((total_issues++))
+    check_ebs_snapshots $region || ((total_issues++))
+    
+    # NEW: Network infrastructure (delete in reverse dependency order)
+    if [ "$DELETE_MODE" = "nuke" ]; then
+        # Delete in correct order for VPC cleanup
+        check_internet_gateways $region || ((total_issues++))
+        check_nat_gateways $region || ((total_issues++))  # Already checked above, but important for order
+        check_route_tables $region || ((total_issues++))
+        check_subnets $region || ((total_issues++))
+        check_vpcs $region || ((total_issues++))  # Must be last
+    else
+        check_internet_gateways $region || ((total_issues++))
+        check_route_tables $region || ((total_issues++))
+        check_subnets $region || ((total_issues++))
+        check_vpcs $region || ((total_issues++))
+    fi
+    
     echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}"
     if [ $total_issues -eq 0 ]; then
         log_success " Region $region is CLEAN - No cost-incurring resources found!"
@@ -779,9 +1127,13 @@ check_region() {
 main() {
     echo -e "${PURPLE}"
     echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-    echo "║                     AWS RESOURCE DEEP PROBE SCRIPT                      ║"
+    echo "║              AWS RESOURCE DEEP PROBE & NUKE SCRIPT                      ║"
     echo "╠══════════════════════════════════════════════════════════════════════════════╣"
+    echo "║  MODE: ${DELETE_MODE}                                                        ║"
     echo "║  This script will scan ALL AWS regions for cost-incurring resources         ║"
+    if [ "$DELETE_MODE" = "nuke" ]; then
+    echo "║  🚨 NUKE MODE ENABLED - ALL RESOURCES WILL BE DELETED! 🚨                   ║"
+    fi
     echo "║                                                                              ║"
     echo "║  🚨 HIGH PRIORITY (High Cost):                                              ║"
     echo "║     • EC2 Instances        • EKS Clusters        • RDS Instances            ║"
@@ -792,17 +1144,58 @@ main() {
     echo "║    MEDIUM PRIORITY (Medium Cost):                                         ║"
     echo "║     • Lambda Functions     • ECS Services       • S3 Buckets               ║"
     echo "║     • DynamoDB Tables      • CloudFront         • Route 53                 ║"
-    echo "║     • Fargate Tasks        • ECS Clusters                                   ║"
+    echo "║     • Fargate Tasks        • ECS Clusters       • ECR Repositories         ║"
     echo "║                                                                              ║"
     echo "║   COMPREHENSIVE DEEP PROBE (Hidden Billing Sources):                     ║"
     echo "║     • Hidden K8s Resources • EKS Billing Remnants • CloudWatch Logs        ║"
     echo "║     • K8s-related ASGs     • K8s-related LBs     • K8s-related VPCs        ║"
     echo "║     • EKS Service Roles    • Network Interfaces  • CloudFormation Stacks   ║"
     echo "║                                                                              ║"
+    echo "║   NEW COVERAGE (realistic-demo-pretamane architecture):                  ║"
+    echo "║     • ECR Repositories     • Backup Vaults/Plans • Elastic IPs             ║"
+    echo "║     • EBS Volumes/Snapshots• Internet Gateways   • Route Tables            ║"
+    echo "║     • Subnets              • Custom VPCs         • IAM Policies/Roles      ║"
+    echo "║                                                                              ║"
     echo "║  ℹ️  LOW PRIORITY (Low Cost):                                               ║"
     echo "║     • IAM Resources        • Security Groups     • Other Services           ║"
     echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
+    
+    if [ "$DELETE_MODE" = "nuke" ]; then
+        echo ""
+        echo -e "${RED}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║                           🚨 DANGER ZONE 🚨                                  ║${NC}"
+        echo -e "${RED}║                                                                              ║${NC}"
+        echo -e "${RED}║  You are about to DELETE ALL AWS resources across ALL regions!              ║${NC}"
+        echo -e "${RED}║  This action is IRREVERSIBLE and will:                                      ║${NC}"
+        echo -e "${RED}║    1. Delete ALL EC2 instances, EKS clusters, databases                      ║${NC}"
+        echo -e "${RED}║    2. Delete ALL S3 buckets and their contents                              ║${NC}"
+        echo -e "${RED}║    3. Delete ALL Lambda functions, DynamoDB tables                          ║${NC}"
+        echo -e "${RED}║    4. Delete ALL VPCs, subnets, and networking components                   ║${NC}"
+        echo -e "${RED}║    5. Delete ALL IAM roles, policies, and ECR repositories                  ║${NC}"
+        echo -e "${RED}║                                                                              ║${NC}"
+        echo -e "${RED}║  Type 'NUKE' to confirm, or anything else to cancel:                        ║${NC}"
+        echo -e "${RED}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        read -r confirmation
+        
+        if [ "$confirmation" != "NUKE" ]; then
+            echo ""
+            log_warning "Deletion cancelled by user. Switching to scan mode."
+            DELETE_MODE="scan"
+        else
+            echo ""
+            log_critical "🚨 NUKE MODE CONFIRMED - Starting deletion in 10 seconds..."
+            log_critical "Press Ctrl+C now to abort!"
+            for i in {10..1}; do
+                echo -ne "\r${RED}Deletion starting in $i seconds...${NC}"
+                sleep 1
+            done
+            echo ""
+            log_critical "🚨 BEGINNING TOTAL AWS RESOURCE DELETION 🚨"
+            echo ""
+        fi
+    fi
     
     log " Starting comprehensive AWS resource scan..."
     
@@ -877,6 +1270,22 @@ main() {
         exit 0
     fi
 }
+
+# Show usage if requested
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    echo "AWS Resource Deep Probe & Nuke Script"
+    echo ""
+    echo "Usage:"
+    echo "  $0                # Scan mode - only check for resources"
+    echo "  $0 scan           # Scan mode - only check for resources"
+    echo "  $0 nuke           # NUKE mode - DELETE ALL resources (requires confirmation)"
+    echo ""
+    echo "Examples:"
+    echo "  $0                # Safe scan of all resources"
+    echo "  $0 nuke           # Delete everything (will ask for confirmation)"
+    echo ""
+    exit 0
+fi
 
 # Run main function
 main "$@"

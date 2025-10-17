@@ -1,0 +1,529 @@
+{
+  "info": {
+    "name": "Unified Enhanced API - Developer Handoff",
+    "description": "Comprehensive API collection for the Unified Document Management & Contact Intelligence System",
+    "version": "3.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set base URL",
+          "pm.environment.set('baseUrl', 'https://api.demo-pretamane.com');",
+          "",
+          "// Generate test data",
+          "pm.environment.set('testContactId', 'test_contact_' + Date.now());",
+          "pm.environment.set('testDocumentId', 'test_doc_' + Date.now());",
+          "pm.environment.set('testEmail', 'test+' + Date.now() + '@example.com');"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.demo-pretamane.com",
+      "type": "string"
+    },
+    {
+      "key": "testContactId",
+      "value": "test_contact_123",
+      "type": "string"
+    },
+    {
+      "key": "testDocumentId",
+      "value": "test_doc_123",
+      "type": "string"
+    },
+    {
+      "key": "testEmail",
+      "value": "test@example.com",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🏥 Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Comprehensive health check with service status and diagnostics"
+          },
+          "response": []
+        },
+        {
+          "name": "API Information",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "API information and feature overview"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📝 Contact Forms",
+      "item": [
+        {
+          "name": "Enhanced Contact Form",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"{{testEmail}}\",\n  \"message\": \"Interested in your services. This is a test message from Postman.\",\n  \"company\": \"Acme Corporation\",\n  \"service\": \"Web Development\",\n  \"budget\": \"$10,000 - $50,000\",\n  \"source\": \"postman-test\",\n  \"userAgent\": \"Postman Runtime\",\n  \"pageUrl\": \"https://test.demo-pretamane.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contact",
+              "host": ["{{baseUrl}}"],
+              "path": ["contact"]
+            },
+            "description": "Enhanced contact form submission with document processing capabilities"
+          },
+          "response": []
+        },
+        {
+          "name": "Basic Contact Form",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Smith\",\n  \"email\": \"{{testEmail}}\",\n  \"message\": \"Basic test message from Postman\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contact/basic",
+              "host": ["{{baseUrl}}"],
+              "path": ["contact", "basic"]
+            },
+            "description": "Basic contact form submission (legacy endpoint)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📄 Document Management",
+      "item": [
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Document file to upload"
+                },
+                {
+                  "key": "contact_id",
+                  "value": "{{testContactId}}",
+                  "type": "text",
+                  "description": "Associated contact ID"
+                },
+                {
+                  "key": "document_type",
+                  "value": "proposal",
+                  "type": "text",
+                  "description": "Type of document"
+                },
+                {
+                  "key": "description",
+                  "value": "Test document uploaded via Postman",
+                  "type": "text",
+                  "description": "Document description"
+                },
+                {
+                  "key": "tags",
+                  "value": "test,postman,documentation",
+                  "type": "text",
+                  "description": "Comma-separated tags"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/documents/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "upload"]
+            },
+            "description": "Upload document with metadata and contact association"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"test document\",\n  \"filters\": {\n    \"document_type\": \"proposal\",\n    \"contact_id\": \"{{testContactId}}\"\n  },\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/documents/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "search"]
+            },
+            "description": "Search documents with advanced filtering and OpenSearch integration"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact Documents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contacts/{{testContactId}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "{{testContactId}}", "documents"]
+            },
+            "description": "Get all documents for a specific contact"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📊 Analytics & Statistics",
+      "item": [
+        {
+          "name": "System Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/insights",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "insights"]
+            },
+            "description": "System analytics and insights with document processing statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Visitor Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["stats"]
+            },
+            "description": "Visitor statistics and system metrics"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "⚙️ Admin Endpoints",
+      "item": [
+        {
+          "name": "Background Processor Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/background-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "background-status"]
+            },
+            "description": "Background processor status and task information"
+          },
+          "response": []
+        },
+        {
+          "name": "Process S3 Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bucket\": \"realistic-demo-pretamane-data\",\n  \"key\": \"documents/test/test-document.txt\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/process-s3-event",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "process-s3-event"]
+            },
+            "description": "Process S3 event in background (admin endpoint)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🧪 Testing Scenarios",
+      "item": [
+        {
+          "name": "Complete Workflow Test",
+          "item": [
+            {
+              "name": "1. Submit Contact",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Workflow Test User\",\n  \"email\": \"workflow@example.com\",\n  \"message\": \"Testing complete workflow\",\n  \"company\": \"Test Corp\",\n  \"service\": \"Testing\",\n  \"budget\": \"$5,000 - $10,000\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/contact",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["contact"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('workflowContactId', response.contactId);",
+                      "    console.log('Contact ID saved:', response.contactId);",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "2. Upload Document",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": []
+                    },
+                    {
+                      "key": "contact_id",
+                      "value": "{{workflowContactId}}",
+                      "type": "text"
+                    },
+                    {
+                      "key": "document_type",
+                      "value": "test",
+                      "type": "text"
+                    },
+                    {
+                      "key": "description",
+                      "value": "Workflow test document",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/documents/upload",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["documents", "upload"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('workflowDocumentId', response.document_id);",
+                      "    console.log('Document ID saved:', response.document_id);",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "3. Search Documents",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"workflow test\",\n  \"filters\": {\n    \"contact_id\": \"{{workflowContactId}}\"\n  },\n  \"limit\": 5\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/documents/search",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["documents", "search"]
+                }
+              }
+            },
+            {
+              "name": "4. Get Contact Documents",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/contacts/{{workflowContactId}}/documents",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["contacts", "{{workflowContactId}}", "documents"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Error Handling Test",
+          "item": [
+            {
+              "name": "Invalid Contact Data",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"\",\n  \"email\": \"invalid-email\",\n  \"message\": \"\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/contact",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["contact"]
+                }
+              }
+            },
+            {
+              "name": "Invalid Search Query",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"\",\n  \"limit\": -1\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/documents/search",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["documents", "search"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

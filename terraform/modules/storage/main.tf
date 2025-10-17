@@ -364,70 +364,13 @@ resource "aws_iam_role_policy_attachment" "opensearch_access" {
 # S3 Bucket Notifications (Optional)
 # ---------------------------
 
-resource "aws_s3_bucket_notification" "data_bucket_notification" {
-  count  = var.enable_s3_notifications ? 1 : 0
-  bucket = aws_s3_bucket.data_bucket.id
+# S3 bucket notification - REMOVED
+# Lambda function processing consolidated into unified FastAPI application
+# Background processing now handled by FastAPI background tasks
 
-  lambda_function {
-    lambda_function_arn = aws_lambda_function.s3_processor[0].arn
-    events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = "uploads/"
-    filter_suffix       = ".json"
-  }
-}
+# Lambda function for S3 processing - REMOVED
+# Functionality consolidated into unified FastAPI application
 
-# Lambda function for S3 processing
-resource "aws_lambda_function" "s3_processor" {
-  count            = var.enable_s3_notifications ? 1 : 0
-  filename         = "lambda_processor.zip"
-  function_name    = "${var.project_name}-s3-processor"
-  role            = aws_iam_role.lambda_role[0].arn
-  handler         = "index.handler"
-  runtime         = "python3.9"
-  timeout         = 30
-
-  environment {
-    variables = {
-      OPENSEARCH_ENDPOINT = aws_opensearch_domain.main.endpoint
-      OPENSEARCH_INDEX   = "documents"
-    }
-  }
-}
-
-# Lambda IAM role
-resource "aws_iam_role" "lambda_role" {
-  count = var.enable_s3_notifications ? 1 : 0
-  name  = "${var.project_name}-lambda-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-# Lambda permissions
-resource "aws_iam_role_policy_attachment" "lambda_basic" {
-  count      = var.enable_s3_notifications ? 1 : 0
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-  role       = aws_iam_role.lambda_role[0].name
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_s3" {
-  count      = var.enable_s3_notifications ? 1 : 0
-  policy_arn = aws_iam_policy.s3_access_policy.arn
-  role       = aws_iam_role.lambda_role[0].name
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_opensearch" {
-  count      = var.enable_s3_notifications ? 1 : 0
-  policy_arn = aws_iam_policy.opensearch_access_policy.arn
-  role       = aws_iam_role.lambda_role[0].name
-}
+# Lambda IAM role - REMOVED
+# Lambda permissions - REMOVED
+# All Lambda functionality now handled by unified FastAPI application

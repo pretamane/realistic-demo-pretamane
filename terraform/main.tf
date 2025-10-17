@@ -216,3 +216,18 @@ resource "helm_release" "efs_csi_driver" {
 
   depends_on = [module.eks, module.efs]
 }
+
+# ---------------------------
+# API Gateway Module for External Access
+# ---------------------------
+
+module "api_gateway" {
+  source = "./modules/api-gateway"
+  project_name        = "realistic-demo-pretamane"
+  region              = "ap-southeast-1"
+  eks_node_public_ip  = "13.215.48.255"  # EKS node public IP
+  node_port           = 30080
+  vpc_id              = module.vpc.vpc_id
+  eks_cluster_name    = module.eks.cluster_name
+  subnet_ids          = module.vpc.public_subnet_ids
+}

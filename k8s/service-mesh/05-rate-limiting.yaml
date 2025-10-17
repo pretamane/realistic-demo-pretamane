@@ -1,0 +1,157 @@
+# Rate Limiting and Traffic Management
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: contact-api-rate-limit
+  namespace: default
+spec:
+  workloadSelector:
+    labels:
+      app: contact-api
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.local_ratelimit
+        typed_config:
+          "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+          type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          value:
+            stat_prefix: http_local_rate_limiter
+            token_bucket:
+              max_tokens: 100
+              tokens_per_fill: 50
+              fill_interval: 60s
+            filter_enabled:
+              runtime_key: local_rate_limit_enabled
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            filter_enforced:
+              runtime_key: local_rate_limit_enforced
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+---
+# Circuit Breaker Configuration
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: contact-api-circuit-breaker
+  namespace: default
+spec:
+  host: contact-api-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 10
+        maxRetries: 3
+        consecutiveGatewayErrors: 5
+        interval: 30s
+        baseEjectionTime: 30s
+        maxEjectionPercent: 50
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+# Traffic Splitting for Canary Deployments
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: contact-api-canary
+  namespace: default
+spec:
+  hosts:
+  - contact-api-service
+  http:
+  - match:
+    - headers:
+        canary:
+          exact: "true"
+    route:
+    - destination:
+        host: contact-api-service
+        subset: canary
+        port:
+          number: 8000
+      weight: 100
+  - route:
+    - destination:
+        host: contact-api-service
+        subset: stable
+        port:
+          number: 8000
+      weight: 90
+    - destination:
+        host: contact-api-service
+        subset: canary
+        port:
+          number: 8000
+      weight: 10
+---
+# Destination Rule for Canary Subsets
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: contact-api-canary-dr
+  namespace: default
+spec:
+  host: contact-api-service
+  subsets:
+  - name: stable
+    labels:
+      version: stable
+  - name: canary
+    labels:
+      version: canary
+---
+# Request Timeout Configuration
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: contact-api-timeout
+  namespace: default
+spec:
+  hosts:
+  - contact-api-service
+  http:
+  - timeout: 30s
+    route:
+    - destination:
+        host: contact-api-service
+        port:
+          number: 8000
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: 5xx,reset,connect-failure,refused-stream
+---
+# Load Balancing Configuration
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: contact-api-lb
+  namespace: default
+spec:
+  host: contact-api-service
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_CONN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 10

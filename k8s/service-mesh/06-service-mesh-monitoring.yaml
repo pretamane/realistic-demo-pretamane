@@ -1,0 +1,197 @@
+# Service Mesh Monitoring Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: istio-telemetry-config
+  namespace: istio-system
+data:
+  mesh: |
+    defaultConfig:
+      proxyStatsMatcher:
+        inclusionRegexps:
+        - ".*circuit_breakers.*"
+        - ".*upstream_rq_retry.*"
+        - ".*upstream_rq_pending.*"
+        - ".*upstream_rq_rx_reset.*"
+        - ".*upstream_rq_timeout.*"
+        - ".*upstream_cx_rx_bytes_total.*"
+        - ".*upstream_cx_tx_bytes_total.*"
+        - ".*upstream_rq_total.*"
+        - ".*upstream_cx_total.*"
+        - ".*istio_requests_total.*"
+        - ".*istio_request_duration.*"
+        - ".*istio_request_bytes.*"
+        - ".*istio_response_bytes.*"
+        - ".*istio_tcp_connections_opened_total.*"
+        - ".*istio_tcp_connections_closed_total.*"
+        - ".*istio_tcp_sent_bytes_total.*"
+        - ".*istio_tcp_received_bytes_total.*"
+---
+# Prometheus ServiceMonitor for Istio Metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: istio-proxy-monitor
+  namespace: monitoring
+  labels:
+    app: istio-proxy
+spec:
+  selector:
+    matchLabels:
+      app: istio-proxy
+  endpoints:
+  - port: http-envoy-prom
+    interval: 30s
+    path: /stats/prometheus
+---
+# Grafana Dashboard for Service Mesh
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: istio-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  istio-service-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Istio Service Mesh Dashboard",
+        "tags": ["istio"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(istio_requests_total[5m])) by (destination_service_name)",
+                "legendFormat": "{{destination_service_name}}"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": 2,
+            "title": "Request Duration",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(istio_request_duration_milliseconds_bucket[5m])) by (le, destination_service_name))",
+                "legendFormat": "95th percentile - {{destination_service_name}}"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 0
+            }
+          },
+          {
+            "id": 3,
+            "title": "Error Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(istio_requests_total{response_code!~\"2.*\"}[5m])) by (destination_service_name)",
+                "legendFormat": "{{destination_service_name}}"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 8
+            }
+          },
+          {
+            "id": 4,
+            "title": "Circuit Breaker Status",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(istio_circuit_breakers_total[5m])) by (destination_service_name)",
+                "legendFormat": "{{destination_service_name}}"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 8
+            }
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+---
+# Service Entry for External Services
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: external-aws-services
+  namespace: default
+spec:
+  hosts:
+  - "*.amazonaws.com"
+  - "*.amazon.com"
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  - number: 80
+    name: http
+    protocol: HTTP
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+# Sidecar Configuration for Service Mesh
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: default-sidecar
+  namespace: default
+spec:
+  workloadSelector:
+    labels:
+      app: contact-api
+  egress:
+  - hosts:
+    - "./*"
+    - "istio-system/*"
+    - "monitoring/*"
+  - hosts:
+    - "default/*"
+  - hosts:
+    - "monitoring/*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: monitoring-sidecar
+  namespace: monitoring
+spec:
+  workloadSelector:
+    labels:
+      app.kubernetes.io/name: grafana
+  egress:
+  - hosts:
+    - "./*"
+    - "istio-system/*"
+    - "default/*"
+  - hosts:
+    - "monitoring/*"

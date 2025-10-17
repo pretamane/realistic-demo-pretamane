@@ -1,0 +1,23 @@
+# LoadBalancer Service for External Access
+apiVersion: v1
+kind: Service
+metadata:
+  name: unified-enhanced-app-loadbalancer
+  namespace: default
+  labels:
+    app: unified-enhanced-app
+    component: external-access
+    tier: loadbalancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+spec:
+  type: LoadBalancer
+  selector:
+    app: unified-enhanced-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+      name: http
+  externalTrafficPolicy: Cluster

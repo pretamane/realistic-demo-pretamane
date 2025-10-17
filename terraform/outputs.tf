@@ -36,3 +36,14 @@ output "website_visitors_table_name" {
 output "app_role_arn" {
   value = module.database.app_role_arn
 }
+
+# EFS outputs
+output "efs_csi_driver_role_arn" {
+  value = module.efs.efs_csi_driver_role_arn
+}
+
+# API Gateway outputs
+output "api_gateway_url" {
+  value = module.api_gateway.api_gateway_url
+  description = "External API Gateway URL for public access"
+}

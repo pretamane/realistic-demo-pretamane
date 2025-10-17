@@ -1,0 +1,52 @@
+# Kustomization for Service Mesh Configuration
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: service-mesh-config
+  labels:
+    app: realistic-demo-pretamane
+    component: service-mesh
+    version: v1.0.0
+
+# Resources to include (in deployment order)
+resources:
+  # 1. Namespace configuration
+  - 01-istio-namespace.yaml
+  
+  # 2. Istio deployment
+  - 07-istio-deployment.yaml
+  
+  # 3. Gateway configuration
+  - 02-istio-gateway.yaml
+  
+  # 4. Mutual TLS configuration
+  - 03-mutual-tls.yaml
+  
+  # 5. Authorization policies
+  - 04-authorization-policies.yaml
+  
+  # 6. Rate limiting and traffic management
+  - 05-rate-limiting.yaml
+  
+  # 7. Service mesh monitoring
+  - 06-service-mesh-monitoring.yaml
+  
+  # 8. Testing and validation
+  - 08-service-mesh-testing.yaml
+
+# Common labels for all resources
+commonLabels:
+  app: realistic-demo-pretamane
+  component: service-mesh
+  managed-by: kustomize
+
+# Namespace for all resources
+namespace: istio-system
+
+# Image transformations
+images:
+  - name: docker.io/istio/proxyv2
+    newTag: 1.19.0
+  - name: curlimages/curl
+    newTag: latest

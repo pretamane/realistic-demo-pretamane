@@ -5,9 +5,13 @@ provider "aws" {
 }
 
 provider "kubernetes" {
-  # Will be configured after EKS cluster is created
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 }
 
 provider "helm" {
-  # For ALB Ingress Controller later
+  kubernetes = {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  }
 }

@@ -1,0 +1,77 @@
+# Mutual TLS Configuration
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default-mtls
+  namespace: default
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: monitoring-mtls
+  namespace: monitoring
+spec:
+  mtls:
+    mode: STRICT
+---
+# Destination Rule for mTLS
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: contact-api-dr
+  namespace: default
+spec:
+  host: contact-api-service
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 10
+        maxRetries: 3
+        consecutiveGatewayErrors: 5
+        interval: 30s
+        baseEjectionTime: 30s
+---
+# Destination Rule for Enhanced Document Processor
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: enhanced-document-processor-dr
+  namespace: default
+spec:
+  host: enhanced-document-processor-service
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 50
+      http:
+        http1MaxPendingRequests: 25
+        maxRequestsPerConnection: 5
+        maxRetries: 2
+---
+# Destination Rule for Monitoring Services
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: grafana-dr
+  namespace: monitoring
+spec:
+  host: grafana
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 20
+      http:
+        http1MaxPendingRequests: 10
+        maxRequestsPerConnection: 5

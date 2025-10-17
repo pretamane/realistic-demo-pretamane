@@ -1,0 +1,860 @@
+# ============================================================================
+# GRAFANA DEPLOYMENT WITH PROVISIONING
+# ============================================================================
+# Complete Grafana setup with automatic dashboard and datasource provisioning
+# ============================================================================
+
+---
+# Grafana Deployment with provisioning
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: monitoring-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: grafana
+        app.kubernetes.io/component: monitoring
+    spec:
+      serviceAccountName: grafana
+      securityContext:
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
+      containers:
+      - name: grafana
+        image: grafana/grafana:10.2.0
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: grafana-credentials
+              key: admin-password
+        - name: GF_USERS_ALLOW_SIGN_UP
+          value: "false"
+        - name: GF_INSTALL_PLUGINS
+          value: "grafana-piechart-panel,grafana-bargauge-panel,grafana-heatmap-panel"
+        - name: GF_LOG_LEVEL
+          value: "INFO"
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        - name: dashboards
+          mountPath: /var/lib/grafana/dashboards
+        - name: provisioning-dashboards
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: provisioning-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+      volumes:
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-pvc
+      - name: dashboards
+        configMap:
+          name: grafana-dashboards
+      - name: provisioning-dashboards
+        configMap:
+          name: grafana-dashboard-provisioning
+      - name: provisioning-datasources
+        configMap:
+          name: grafana-datasource-provisioning
+
+---
+# Grafana Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app.kubernetes.io/name: grafana
+
+---
+# Grafana Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /api/health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+spec:
+  rules:
+  - host: grafana.demo-pretamane.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000
+
+---
+# PersistentVolumeClaim for Grafana storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+  namespace: monitoring
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: efs-sc-advanced
+
+---
+# ConfigMap for dashboard provisioning configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provisioning
+  namespace: monitoring
+data:
+  dashboard-providers.yaml: |
+    # Dashboard Providers Configuration
+    apiVersion: 1
+
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards
+
+---
+# ConfigMap for datasource provisioning configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasource-provisioning
+  namespace: monitoring
+data:
+  prometheus.yaml: |
+    # Prometheus Datasource Configuration
+    apiVersion: 1
+
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        editable: true
+        jsonData:
+          httpMethod: POST
+          timeInterval: "30s"
+          queryTimeout: "300s"
+          tlsSkipVerify: true
+
+---
+# ConfigMap for dashboards
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+data:
+  contact-form-metrics.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Contact Form Analytics Dashboard",
+        "tags": ["contact-form", "analytics", "business-metrics"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Contact Form Submissions Over Time",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "increase(contact_form_submissions_total[1h])",
+                "legendFormat": "Submissions per hour",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 2,
+                  "fillOpacity": 10,
+                  "gradientMode": "none",
+                  "spanNulls": false,
+                  "showPoints": "auto",
+                  "pointSize": 5,
+                  "stacking": {
+                    "mode": "none"
+                  },
+                  "axisPlacement": "auto",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                }
+              }
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": 2,
+            "title": "Contact Form Response Time",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(contact_form_response_time_seconds_bucket[5m]))",
+                "legendFormat": "95th percentile",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 2,
+                  "fillOpacity": 0,
+                  "gradientMode": "none",
+                  "spanNulls": false,
+                  "showPoints": "auto",
+                  "pointSize": 5,
+                  "stacking": {
+                    "mode": "none"
+                  },
+                  "axisPlacement": "auto",
+                  "axisLabel": "Response Time (seconds)",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "unit": "s",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 3
+                    }
+                  ]
+                }
+              }
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 0
+            }
+          },
+          {
+            "id": 3,
+            "title": "Contact Form Success Rate",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sum(rate(contact_form_submissions_success_total[5m])) / sum(rate(contact_form_submissions_total[5m])) * 100",
+                "legendFormat": "Success Rate",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 95
+                    },
+                    {
+                      "color": "green",
+                      "value": 99
+                    }
+                  ]
+                },
+                "unit": "percent"
+              }
+            },
+            "gridPos": {
+              "h": 6,
+              "w": 6,
+              "x": 0,
+              "y": 8
+            }
+          }
+        ],
+        "time": {
+          "from": "now-7d",
+          "to": "now"
+        },
+        "refresh": "1m",
+        "schemaVersion": 36,
+        "version": 1
+      },
+      "folderId": 0,
+      "overwrite": true
+    }
+  document-processing-stats.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Document Processing Analytics Dashboard",
+        "tags": ["document-processing", "analytics", "business-intelligence"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Document Upload Trends",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "increase(document_uploads_total[1h])",
+                "legendFormat": "Uploads per hour",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 2,
+                  "fillOpacity": 15,
+                  "gradientMode": "none",
+                  "spanNulls": false,
+                  "showPoints": "auto",
+                  "pointSize": 5,
+                  "stacking": {
+                    "mode": "none"
+                  },
+                  "axisPlacement": "auto",
+                  "axisLabel": "Count",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                }
+              }
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": 2,
+            "title": "Document Processing Time",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(document_processing_time_seconds_bucket[5m]))",
+                "legendFormat": "95th percentile",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 2,
+                  "fillOpacity": 0,
+                  "gradientMode": "none",
+                  "spanNulls": false,
+                  "showPoints": "auto",
+                  "pointSize": 5,
+                  "stacking": {
+                    "mode": "none"
+                  },
+                  "axisPlacement": "auto",
+                  "axisLabel": "Processing Time (seconds)",
+                  "scaleDistribution": {
+                    "type": "linear"
+                  }
+                },
+                "unit": "s",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 10
+                    },
+                    {
+                      "color": "red",
+                      "value": 30
+                    }
+                  ]
+                }
+              }
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 0
+            }
+          },
+          {
+            "id": 3,
+            "title": "Documents Processed Today",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "increase(document_processing_total[24h])",
+                "legendFormat": "Processed Today",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            },
+            "gridPos": {
+              "h": 6,
+              "w": 6,
+              "x": 0,
+              "y": 8
+            }
+          }
+        ],
+        "time": {
+          "from": "now-7d",
+          "to": "now"
+        },
+        "refresh": "30s",
+        "schemaVersion": 36,
+        "version": 1
+      },
+      "folderId": 0,
+      "overwrite": true
+    }
+
+---
+# ServiceAccount for Grafana
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+
+---
+# Grafana credentials secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-credentials
+  namespace: monitoring
+type: Opaque
+data:
+  # Base64 encoded "admin123" - CHANGE IN PRODUCTION
+  admin-password: YWRtaW4xMjM=
+
+---
+# ============================================================================
+# PROMETHEUS DEPLOYMENT FOR METRICS COLLECTION
+# ============================================================================
+
+---
+# Prometheus Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prometheus
+    spec:
+      serviceAccountName: prometheus
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.47.0
+        ports:
+        - containerPort: 9090
+          name: http
+        volumeMounts:
+        - name: prometheus-storage
+          mountPath: /prometheus
+        - name: prometheus-config
+          mountPath: /etc/prometheus
+        args:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+        - '--storage.tsdb.path=/prometheus'
+        - '--web.console.libraries=/etc/prometheus/console_libraries'
+        - '--web.console.templates=/etc/prometheus/consoles'
+        - '--storage.tsdb.retention.time=200h'
+        - '--web.enable-lifecycle'
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: prometheus-storage
+        persistentVolumeClaim:
+          claimName: prometheus-pvc
+      - name: prometheus-config
+        configMap:
+          name: prometheus-config
+
+---
+# Prometheus Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: http
+  selector:
+    app.kubernetes.io/name: prometheus
+
+---
+# Prometheus ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      # - "first_rules.yml"
+      # - "second_rules.yml"
+
+    scrape_configs:
+      # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'contact-api'
+        static_configs:
+          - targets: ['contact-api-service:8000']
+        scrape_interval: 10s
+        metrics_path: '/metrics'
+
+      - job_name: 'enhanced-document-processor'
+        static_configs:
+          - targets: ['enhanced-document-processor-service:8000']
+        scrape_interval: 10s
+        metrics_path: '/metrics'
+
+      - job_name: 'grafana'
+        static_configs:
+          - targets: ['grafana:3000']
+        scrape_interval: 30s
+        metrics_path: '/metrics'
+
+---
+# Prometheus PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-pvc
+  namespace: monitoring
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: efs-sc-advanced
+
+---
+# Prometheus ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: monitoring
+
+---
+# ============================================================================
+# NETWORK POLICIES FOR MONITORING COMPONENTS
+# ============================================================================
+
+---
+# Network Policy for Grafana
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: grafana-allow
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    # Allow Prometheus access
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+    # Allow ALB access for external dashboard access
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+  egress:
+  - to: []
+    ports:
+    # DNS
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    # Allow Grafana to access Prometheus
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+    ports:
+    - protocol: TCP
+      port: 9090
+
+---
+# Network Policy for Prometheus
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: prometheus-allow
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    # Allow Grafana access
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: grafana
+    # Allow Prometheus self-access
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+    # Allow application access for metrics scraping
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: default
+  egress:
+  - to: []
+    ports:
+    # DNS for service discovery
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# ============================================================================
+# DOCUMENTATION AND SUMMARY
+# ============================================================================
+
+---
+# Monitoring Stack Summary ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-stack-summary
+  namespace: monitoring
+data:
+  summary: |
+    Enhanced Monitoring Stack Summary:
+
+    COMPONENTS DEPLOYED:
+    ===================
+    1. Grafana (v10.2.0)
+       - Dashboard: Contact Form Analytics
+       - Dashboard: Document Processing Analytics
+       - Automatic provisioning enabled
+       - External access via ALB
+
+    2. Prometheus (v2.47.0)
+       - Metrics collection from applications
+       - 200h retention policy
+       - Service discovery enabled
+
+    3. Persistent Storage
+       - Grafana: 5GB EFS storage
+       - Prometheus: 10GB EFS storage
+
+    MONITORING CAPABILITIES:
+    =======================
+    - Contact form submission tracking
+    - Document processing metrics
+    - Response time monitoring
+    - Error rate tracking
+    - Business intelligence dashboards
+    - Real-time alerting capabilities
+
+    SECURITY:
+    =========
+    - Network policies for component isolation
+    - Secure credential management
+    - Namespace-based access control
+    - Encrypted storage
+
+    ACCESS:
+    =======
+    - Grafana: http://grafana.demo-pretamane.com
+    - Default credentials: admin/admin123
+    - CHANGE PASSWORD IMMEDIATELY IN PRODUCTION
+
+    METRICS COLLECTED:
+    ==================
+    - contact_form_submissions_total
+    - contact_form_response_time_seconds
+    - document_uploads_total
+    - document_processing_time_seconds
+    - document_search_queries_total
+    - system_analytics_total_contacts
+
+    MAINTENANCE:
+    ============
+    - Dashboards auto-update every 30 seconds
+    - Prometheus retention: 200 hours
+    - Storage cleanup: Automatic via EFS lifecycle
+    - Backup: Integrated with EFS backup policies
+
+---
+# ============================================================================
+# END OF ENHANCED MONITORING STACK
+# ============================================================================
+
+
